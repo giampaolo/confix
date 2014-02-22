@@ -1,0 +1,4 @@
+- Giampaolo Rodola': author.
+
+- Michele Cella: original idea of overwriting class attributes from a static
+  config file.
