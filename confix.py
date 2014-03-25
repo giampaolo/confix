@@ -51,7 +51,7 @@ class ValidationError(Error):
     def __str__(self):
         msg = "'%s.%s'" % (self.section, self.key)
         if not self.msg:
-            msg += " (provided value was %r)" % self.value
+            msg += " value is invalid (got %r)" % self.value
         else:
             msg += " %s" % self.msg
         return msg
