@@ -8,7 +8,7 @@ setup(
     name='confix',
     version='0.1.0',
     description='Language agnostic configuration parser',
-    license='License :: OSI Approved :: MIT License',
+    license='MIT',
     platforms='Platform Independent',
     author="Giampaolo Rodola'",
     author_email='g.rodola@gmail.com',
