@@ -11,9 +11,7 @@ install:
     - pip install coveralls --upgrade
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
-    - coverage run tests.py
+    - python tests.py
 os:
     - linux
     - osx
-after_success:
-    coveralls

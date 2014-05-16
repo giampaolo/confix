@@ -1,3 +1,4 @@
+include .travis.yml
 include CREDITS
 include HISTORY
 include LICENSE
