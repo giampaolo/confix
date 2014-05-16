@@ -21,6 +21,7 @@ clean:
 	rm -rf *\$testfile*
 	rm -rf *.egg-info
 	rm -rf build
+	rm -rf .coverage
 	rm -rf dist
 
 install:
