@@ -1,3 +1,19 @@
+.. image:: https://pypip.in/d/confix/badge.png
+    :target: https://crate.io/packages/confix/
+    :alt: Download this month
+
+.. image:: https://pypip.in/v/confix/badge.png
+    :target: https://pypi.python.org/pypi/confix/
+    :alt: Latest version
+
+.. image:: https://pypip.in/license/confix/badge.png
+    :target: https://pypi.python.org/pypi/confix/
+    :alt: License
+
+.. image:: https://api.travis-ci.org/giampaolo/confix.png?branch=master
+    :target: https://travis-ci.org/giampaolo/confix
+    :alt: Travis
+
 Confix
 ======
 
