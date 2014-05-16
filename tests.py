@@ -252,7 +252,7 @@ class TestBase(object):
         self.assertEqual(cm.exception.key, 'foo')
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, None)
-        self.assertIn('(provided value was 5)', str(cm.exception))
+        self.assertIn('(got 5)', str(cm.exception))
 
 
 # ===================================================================
