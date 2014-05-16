@@ -4,4 +4,10 @@ python:
     - 2.7
     - 3.3
     - 3.4
+    - pypy
+install:
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script: python tests.py
+os:
+  - linux
+  - osx
