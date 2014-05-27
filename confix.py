@@ -17,7 +17,7 @@ except ImportError:
 
 
 __all__ = ['register', 'parse', 'discard', 'schema', 'ValidationError']
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 

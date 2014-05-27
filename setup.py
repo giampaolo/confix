@@ -1,42 +1,86 @@
+#!/usr/bin/env python
+
+import os
 import sys
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 
 if sys.version_info < (2, 6):
     sys.exit('python >= 2.6 only')
 
-setup(
-    name='confix',
-    version='0.1.0',
-    description='Language agnostic configuration parser',
-    license='MIT',
-    platforms='Platform Independent',
-    author="Giampaolo Rodola'",
-    author_email='g.rodola@gmail.com',
-    url='https://pypi.python.org/pypi/confix',
-    py_modules=['confix'],
-    keywords=['config', 'yaml', 'toml', 'json', 'ini', 'sensitive',
-              'password'],
-    # ...supposed to be installed by user if needed
-    # install_requires=['PyYAML', 'toml']
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.0',
-        'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python',
-        'Topic :: Security',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: Software Development :: Libraries',
-        'Topic :: System :: Systems Administration',
-        'Topic :: Utilities',
-    ],
-)
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+
+def get_version():
+    f = open(os.path.join(HERE, 'confix.py'), 'r')
+    try:
+        for line in f:
+            if line.startswith('__version__'):
+                ret = eval(line.strip().split(' = ')[1])
+                assert ret.count('.') == 2, ret
+                for num in ret.split('.'):
+                    assert num.isdigit(), ret
+                return ret
+        else:
+            raise ValueError("couldn't find version string")
+    finally:
+        f.close()
+
+
+def get_description():
+    README = os.path.join(HERE, 'README.rst')
+    f = open(README, 'r')
+    try:
+        return f.read()
+    finally:
+        f.close()
+
+
+VERSION = get_version()
+
+
+def main():
+    setup(
+        name='confix',
+        version=VERSION,
+        description='Language agnostic configuration parser',
+        long_description=get_description(),
+        license='MIT',
+        platforms='Platform Independent',
+        author="Giampaolo Rodola'",
+        author_email='g.rodola@gmail.com',
+        url='https://pypi.python.org/pypi/confix',
+        py_modules=['confix'],
+        keywords=['config', 'yaml', 'toml', 'json', 'ini', 'sensitive',
+                  'password'],
+        # ...supposed to be installed by user if needed
+        # install_requires=['PyYAML', 'toml']
+        classifiers=[
+            'Development Status :: 3 - Alpha',
+            'Intended Audience :: Developers',
+            'Intended Audience :: System Administrators',
+            'License :: OSI Approved :: MIT License',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 2.6',
+            'Programming Language :: Python :: 2.7',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.0',
+            'Programming Language :: Python :: 3.1',
+            'Programming Language :: Python :: 3.2',
+            'Programming Language :: Python :: 3.3',
+            'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python',
+            'Topic :: Security',
+            'Topic :: Software Development :: Libraries :: Python Modules',
+            'Topic :: Software Development :: Libraries',
+            'Topic :: System :: Systems Administration',
+            'Topic :: Utilities',
+        ],
+    )
+
+if __name__ == '__main__':
+    main()

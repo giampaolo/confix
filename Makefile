@@ -33,11 +33,23 @@ uninstall:
 test: install
 	$(PYTHON) $(TSCRIPT)
 
+# requires "pip install pep8"
 pep8:
-	pep8 *.py --ignore E302
+	@git ls-files | grep \\.py$ | xargs pep8
 
+# requires "pip install pyflakes"
 pyflakes:
-	export PYFLAKES_NODOCTEST=1 && pyflakes *.py
+	@export PYFLAKES_NODOCTEST=1 && \
+		git ls-files | grep \\.py$ | xargs pyflakes
 
+# requires "pip install flake8"
+flake8:
+	@git ls-files | grep \\.py$ | xargs flake8
+
+# upload source tarball on https://pypi.python.org/pypi/pysendfile.
 upload-src: clean
 	$(PYTHON) setup.py sdist upload
+
+# git-tag a new release
+git-tag-release:
+	git tag -a release-`python -c "import setup; print(setup.VERSION)"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`
