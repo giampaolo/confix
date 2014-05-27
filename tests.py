@@ -48,9 +48,11 @@ def unlink(path):
         if err.errno != errno.ENOENT:
             raise
 
+
 # ===================================================================
 # base class
 # ===================================================================
+
 
 class TestBase(object):
 
@@ -394,7 +396,8 @@ class TestIni(unittest.TestCase):
 
 
 def test_main():
-    unittest.main(verbosity=2)
+    verbosity = os.environ.get('TOX') and 1 or 2
+    unittest.main(verbosity=verbosity)
 
 if __name__ == '__main__':
     test_main()
