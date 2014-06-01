@@ -8,6 +8,7 @@ python:
 install:
     - pip install pyyaml --upgrade
     - pip install toml --upgrade
+    - pip install flake8 --upgrade
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
     - python tests.py
