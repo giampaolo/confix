@@ -202,11 +202,12 @@ def parse(conf_file, parser=None, type_check=True):
     """
     global _conf_file
     if _conf_file is not None:
-        raise Error('already configured (you may want to use discard() '
-                    'then call parse() again')
+        discard()
+        #raise Error('already configured (you may want to use discard() '
+        #            'then call parse() again')
     if isinstance(conf_file, basestring):
         # 'r' looks mandatory on Python 3.X
-        file = open(conf_file, 'r')
+        file = open(conf_file, 'r', encoding="utf-8")
     with file:
         pmap = {'.yaml': parse_yaml,
                 '.yml': parse_yaml,
@@ -241,13 +242,17 @@ def parse(conf_file, parser=None, type_check=True):
                     #
                     is_schema = isinstance(default_value, schema)
                     # TODO: perhpas "not is_schema" is not necessary
-                    check_type = (type_check
-                                  and not is_schema
-                                  and default_value is not None
-                                  and new_value is not None)
-                    if check_type and type(new_value) != type(default_value):
-                        raise TypesMismatchError(section, key, default_value,
-                                                 new_value)
+                    #value of None is workaround to avoid type checking
+                    if default_value != None:
+                        check_type = (type_check
+                                      and not is_schema
+                                      and default_value is not None
+                                      and new_value is not None)
+                        if check_type and type(new_value) != type(default_value):
+                            #check if class is correct but not instantiated from late binding, if so don't raise error
+                            if check_type and type(new_value.__class__) != type(default_value):
+                                raise TypesMismatchError(section, key, default_value,
+                                                         new_value)
                     #
                     if is_schema and default_value.validator is not None:
                         exc = None
@@ -283,5 +288,5 @@ def parse(conf_file, parser=None, type_check=True):
 def discard():
     """Discard previous configuration (if any)."""
     global _conf_file
-    _conf_map.clear()
+    #_conf_map.clear()
     _conf_file = None
