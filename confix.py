@@ -207,7 +207,7 @@ def parse(conf_file, parser=None, type_check=True):
         #            'then call parse() again')
     if isinstance(conf_file, basestring):
         # 'r' looks mandatory on Python 3.X
-        file = open(conf_file, 'r', encoding="utf-8")
+        file = open(conf_file, 'r')
     with file:
         pmap = {'.yaml': parse_yaml,
                 '.yml': parse_yaml,
