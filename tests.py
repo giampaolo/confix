@@ -11,10 +11,9 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
-if sys.version_info >= (2, 7):
-    import unittest
-else:
-    import unittest2 as unittest  # https://pypi.python.org/pypi/unittest2
+from confix import register, parse, discard, schema
+from confix import Error, InvalidKeyError, TypesMismatchError, RequiredKeyError
+from confix import ValidationError
 
 try:
     import toml
@@ -25,20 +24,21 @@ try:
 except ImportError:
     yaml = None
 
-from confix import register, parse, discard, schema
-from confix import Error, InvalidKeyError, TypesMismatchError, RequiredKeyError
-from confix import ValidationError
-
-
-THIS_MODULE = os.path.splitext(os.path.basename(__file__))[0]
-TESTFN = '$testfile'
 PY3 = sys.version_info >= (3, )
-
 if PY3:
     import io
     StringIO = io.StringIO
 else:
     from StringIO import StringIO
+
+if sys.version_info >= (2, 7):
+    import unittest
+else:
+    import unittest2 as unittest  # requires 'pip install unittest2'
+
+
+THIS_MODULE = os.path.splitext(os.path.basename(__file__))[0]
+TESTFN = '$testfile'
 
 
 def unlink(path):
@@ -395,9 +395,9 @@ class TestIni(unittest.TestCase):
             discard()
 
 
-def test_main():
-    verbosity = os.environ.get('TOX') and 1 or 2
+def main():
+    verbosity = 1 if 'TOX' in os.environ else 2
     unittest.main(verbosity=verbosity)
 
 if __name__ == '__main__':
-    test_main()
+    main()

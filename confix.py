@@ -241,10 +241,9 @@ def parse(conf_file, parser=None, type_check=True):
                     #
                     is_schema = isinstance(default_value, schema)
                     # TODO: perhpas "not is_schema" is not necessary
-                    check_type = (type_check
-                                  and not is_schema
-                                  and default_value is not None
-                                  and new_value is not None)
+                    check_type = (type_check and not
+                                  is_schema and default_value is not None and
+                                  new_value is not None)
                     if check_type and type(new_value) != type(default_value):
                         raise TypesMismatchError(section, key, default_value,
                                                  new_value)
