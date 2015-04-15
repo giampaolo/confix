@@ -11,8 +11,8 @@ import os
 import sys
 
 try:
-    import configparser  # py3
-except ImportError:
+    import configparser  # python 3
+except ImportError:     #python 2
     import ConfigParser as configparser
 
 
@@ -90,7 +90,7 @@ class RequiredKeyError(Error):
 
 
 class TypesMismatchError(Error):
-    """Raised when confg file overrides a key having a type different
+    """Raised when config file overrides a key having a type different
     than the original one defined in the configuration class.
     """
 
@@ -109,11 +109,22 @@ class TypesMismatchError(Error):
 
 
 # --- parsers
+#root = os.path.curdir
 
+    
 def parse_yaml(file):
     import yaml
+    import copy
+    
+    ## define custom yaml tag handler
+    def join(loader, node):
+        seq = loader.construct_sequence(node)
+        return ''.join([str(i) for i in seq])
+    
+    ## register the yaml tag handler
+    yaml.add_constructor('!join', join)
+    
     return yaml.load(file.read())
-
 
 def parse_toml(file):
     import toml
@@ -160,15 +171,15 @@ def parse_ini(file):
 # --- public API
 
 _conf_map = {}
-_conf_file = None
-_DEFAULT = object()
+#_conf_file = None
+#_DEFAULT = object()
 
 
 class schema(collections.namedtuple('field',
              ['default', 'required', 'validator'])):
 
-    def __new__(cls, default=_DEFAULT, required=False, validator=None):
-        if not required and default is _DEFAULT:
+    def __new__(cls, default=object(), required=False, validator=None):
+        if not required and default is object():
             raise TypeError("specify a default value or set required=True")
         if validator is not None and not callable(validator):
             raise ValueError("%r is not callable" % validator)
@@ -200,9 +211,9 @@ def parse(conf_file, parser=None, type_check=True):
       specified in the configuration file has a different type than
       the one defined in the configuration class.
     """
-    global _conf_file
-    if _conf_file is not None:
-        discard()
+    #global _conf_file
+    #if _conf_file is not None:
+    #    discard()
         #raise Error('already configured (you may want to use discard() '
         #            'then call parse() again')
     if isinstance(conf_file, basestring):
@@ -225,6 +236,8 @@ def parse(conf_file, parser=None, type_check=True):
                 raise ValueError("don't know how to parse %r" % file.name)
         conf = parser(file)
 
+        file.close()
+        
     # TODO: use a copy of _conf_map and set it at the end of this
     #       procedure?
     # TODO: should we use threading.[R]Lock (probably safer)?
@@ -250,7 +263,7 @@ def parse(conf_file, parser=None, type_check=True):
                                       and new_value is not None)
                         if check_type and type(new_value) != type(default_value):
                             #check if class is correct but not instantiated from late binding, if so don't raise error
-                            if check_type and type(new_value.__class__) != type(default_value):
+                            if check_type and type(new_value.__class__) is not type(default_value):
                                 raise TypesMismatchError(section, key, default_value,
                                                          new_value)
                     #
@@ -282,11 +295,13 @@ def parse(conf_file, parser=None, type_check=True):
                 if value.required:
                     raise RequiredKeyError(section, key)
                 setattr(cflet, key, value.default)
-    _conf_file = file
+    #_conf_file = file
+    #print('current map' + str(_conf_map))
 
 
-def discard():
-    """Discard previous configuration (if any)."""
-    global _conf_file
-    #_conf_map.clear()
-    _conf_file = None
+# def discard():
+#     """Discard previous configuration (if any)."""
+#     global _conf_file
+#     #don't clear this so that we can have multiple config files
+#     #_conf_map.clear()
+#     _conf_file = None
