@@ -50,7 +50,9 @@ def main():
         keywords=['config', 'yaml', 'toml', 'json', 'ini', 'sensitive',
                   'password'],
         # ...supposed to be installed by user if needed
-        # install_requires=['PyYAML', 'toml']
+        extra_requires=dict(
+            yaml='PyYAML',
+            toml='toml'),
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
