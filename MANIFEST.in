@@ -1,8 +1,11 @@
+include .gitignore
 include .travis.yml
+include .git-pre-commit
 include CREDITS
-include HISTORY
+include HISTORY.rst
 include LICENSE
+include Makefile
 include MANIFEST.in
 include README.rst
 include setup.py
-include tests.py
+include tox.ini
