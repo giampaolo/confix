@@ -70,9 +70,10 @@ class TestBase(object):
     def dict_to_file(self, dct):
         raise NotImplementedError('must be implemented in subclass')
 
-    def write_to_file(self, content, fname=None):
+    @classmethod
+    def write_to_file(cls, content, fname=None):
         if fname is None:
-            fname = self.TESTFN
+            fname = cls.TESTFN
         with open(fname, 'w') as f:
             f.write(content)
 
@@ -255,6 +256,17 @@ class TestBase(object):
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, None)
         self.assertIn('(got 5)', str(cm.exception))
+
+    def test_register_invalid_type(self):
+        def doit():
+            @register('name')
+            def config():
+                pass
+
+        self.dict_to_file({
+            'name': dict(foo=5)
+        })
+        self.assertRaises(TypeError, doit, self.TESTFN)
 
 
 # ===================================================================

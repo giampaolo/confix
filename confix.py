@@ -6,6 +6,7 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
 import collections
+import inspect
 import json
 import os
 import sys
@@ -178,6 +179,9 @@ class schema(collections.namedtuple('field',
 def register(name):
     """Register a configuration class which will be parsed later."""
     def wrapper(klass):
+        if not inspect.isclass(klass):
+            raise TypeError("register decorator is supposed to be used "
+                            "against a class (got %r)" % klass)
         _conf_map[name] = klass
         return klass
     return wrapper
