@@ -71,20 +71,21 @@ class ValidationError(Error):
 
 # --- exceptions (internal)
 
-class InvalidKeyError(Error):
+class UnrecognizedKeyError(Error):
     """Raised when the configuration class does not define a key but
     that is defined in the config file.
     """
 
-    def __init__(self, key, msg=None):
+    def __init__(self, key, value, msg=None):
         # TODO: section is not taken into account
         self.key = key
+        self.value = value
         self.msg = msg
 
     def __str__(self):
         return self.msg or \
-            "configuration class has no value %r but this is defined" \
-            " in the config file" % (self.key)
+            "config file provides key %r with value %r but key %r is not" \
+            "defined in the config class" % (self.key, self.value, self.key)
 
 
 class RequiredKeyError(Error):
@@ -339,7 +340,7 @@ class _Parser:
             except AttributeError:
                 # file defines a key which does not exist in the
                 # conf class
-                raise InvalidKeyError(key)
+                raise UnrecognizedKeyError(key, new_value)
 
             is_schema = isinstance(default_value, schema)
             # TODO: perhpas "not is_schema" is not necessary

@@ -11,8 +11,9 @@ import sys
 # except ImportError:
 #     import ConfigParser as configparser
 
+from confix import Error, UnrecognizedKeyError, RequiredKeyError
 from confix import register, parse, parse_with_envvars, discard, schema
-from confix import Error, InvalidKeyError, RequiredKeyError, TypesMismatchError
+from confix import TypesMismatchError
 from confix import ValidationError
 
 try:
@@ -133,7 +134,7 @@ class TestBase(object):
         self.dict_to_file(
             dict(foo=5, apple=6)
         )
-        with self.assertRaises(InvalidKeyError) as cm:
+        with self.assertRaises(UnrecognizedKeyError) as cm:
             parse(self.TESTFN)
         # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'apple')
@@ -314,12 +315,22 @@ class TestBase(object):
         @register()
         class config:
             some_int = 1
+            some_float = 0.1
         os.environ['SOME_INT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
         # self.assertEqual(cm.exception.section, 'name')
         self.assertEqual(cm.exception.key, 'some_int')
         self.assertEqual(cm.exception.default_value, 1)
+        self.assertEqual(cm.exception.new_value, 'foo')
+
+        del os.environ['SOME_INT']
+        os.environ['SOME_FLOAT'] = 'foo'
+        with self.assertRaises(TypesMismatchError) as cm:
+            parse_with_envvars()
+        # self.assertEqual(cm.exception.section, 'name')
+        self.assertEqual(cm.exception.key, 'some_float')
+        self.assertEqual(cm.exception.default_value, 0.1)
         self.assertEqual(cm.exception.new_value, 'foo')
 
 
@@ -486,6 +497,22 @@ class TestMisc(unittest.TestCase):
 
     def test_no_registered_class(self):
         self.assertRaises(Error, parse)
+
+    def test_exceptions(self):
+        exc = UnrecognizedKeyError(key='foo', value='bar')
+        self.assertEqual(
+            str(exc),
+            "config file provides key 'foo' with value 'bar' but key 'foo' "
+            "is notdefined in the config class")
+        exc = RequiredKeyError(key="foo")
+        self.assertEqual(
+            str(exc),
+            "configuration class requires 'foo' key to be specified in the "
+            "config file")
+        exc = TypesMismatchError(key="foo", default_value=1, new_value='bar')
+        self.assertEqual(
+            str(exc),
+            "type mismatch for key 'foo' (default_value=1) got 'bar'")
 
 
 def main():
