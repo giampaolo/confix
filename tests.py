@@ -294,6 +294,21 @@ class TestBase(object):
         self.assertEqual(config.bar, 2)
         self.assertEqual(config.apple, 10)
 
+    def test_envvars_base_case_sensitive(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+            apple = 3
+        self.dict_to_file(
+            dict(foo=5)
+        )
+        os.environ['APPLE'] = '10'
+        parse_with_envvars(self.TESTFN, case_sensitive=True)
+        self.assertEqual(config.foo, 5)
+        self.assertEqual(config.bar, 2)
+        self.assertEqual(config.apple, 3)
+
     def test_envvars_convert_type(self):
         @register()
         class config:

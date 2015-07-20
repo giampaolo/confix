@@ -218,7 +218,7 @@ def register(section=None):
 class _Parser:
 
     def __init__(self, conf_file=None, parser=None, type_check=True,
-                 parse_envvars=False, env_name_translator=None,
+                 parse_envvars=False, env_case_sensitive=False,
                  env_value_translator=None):
         global _parsed
         if _parsed:
@@ -228,13 +228,8 @@ class _Parser:
         self.parser = parser
         self.type_check = type_check
         self.parse_envvars = parse_envvars
-        self.env_name_translator = env_name_translator
+        self.env_case_sensitive = env_case_sensitive
         self.env_value_translator = env_value_translator
-        if self.env_name_translator is None:
-            self.env_name_translator = self.default_env_name_translator
-        else:
-            if not callable(env_name_translator):
-                raise TypeError("env_name_translator is not callable")
         if self.env_value_translator is None:
             self.env_value_translator = self.default_env_value_translator
         else:
@@ -246,10 +241,6 @@ class _Parser:
             conf.update(self.get_conf_from_env())
         self.process_conf(conf)
         _parsed = True
-
-    @staticmethod
-    def default_env_name_translator(name):
-        return name.lower()
 
     @staticmethod
     def default_env_value_translator(name, value, default_value):
@@ -276,12 +267,14 @@ class _Parser:
         # TODO: support section
         conf_class_inst = _conf_map[None]
         conf_class_names = set(conf_class_inst.__dict__.keys())
+        if not self.env_case_sensitive:
+            conf_class_names = set([x.lower() for x in conf_class_names])
 
         conf = {}
         env = os.environ.copy()
         for name, value in env.items():
-            if self.env_name_translator is not None:
-                name = self.env_name_translator(name)
+            if not self.env_case_sensitive:
+                name = name.lower()
             if name in conf_class_names:
                 default_value = getattr(conf_class_inst, name)
                 value = self.env_value_translator(name, value, default_value)
@@ -410,17 +403,15 @@ def parse(conf_file=None, parser=None, type_check=True):
 
 
 def parse_with_envvars(conf_file=None, parser=None, type_check=True,
-                       name_translator=None, value_translator=None):
+                       case_sensitive=False, value_translator=None):
     """Same as parse() but also takes environment variables into account.
     The order of precedence is:
 
     env-var -> conf-file -> conf-class
 
-    - (callable) name_translator: a callable which is used to convert
-      all the environment variable names before processing.
-      By default all names in os.environ will be lowercase()d.
-      If you don't want this pass `name_translator=lambda x: x`
-      (but also your config class will have to use upper cased names).
+    - (bool) case_sensitive: if `False` env var 'FOO' and 'foo' will be
+      the treated the same and will override config class' key 'foo'
+      (also tread case in a case insensitive manner).
 
     - (callable) value_translator: a callable which is used to convert
       the environment variable values.
@@ -430,7 +421,7 @@ def parse_with_envvars(conf_file=None, parser=None, type_check=True,
     """
     _Parser(conf_file=conf_file, parser=parser, type_check=type_check,
             parse_envvars=True,
-            env_name_translator=name_translator,
+            env_case_sensitive=case_sensitive,
             env_value_translator=value_translator)
 
 
