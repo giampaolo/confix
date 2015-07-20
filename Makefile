@@ -35,6 +35,7 @@ setup-dev-env:
 	rm /tmp/get-pip.py
 	$(PYTHON) -m pip install --user --upgrade pip
 	$(PYTHON) -m pip install --user --upgrade \
+		coverage \
 		flake8 \
 		nose \
 		pep8 \
@@ -56,6 +57,15 @@ test: install
 # Requires "pip install nose".
 test-by-name: install
 	@$(PYTHON) -m nose $(TSCRIPT) --nocapture -v -m $(filter-out $@,$(MAKECMDGOALS))
+
+coverage: install
+	# Note: coverage options are controlled by .coveragerc file
+	rm -rf .coverage htmlcov
+	$(PYTHON) -m coverage run $(TSCRIPT)
+	$(PYTHON) -m coverage report
+	@echo "writing results to htmlcov/index.html"
+	$(PYTHON) -m coverage html
+	$(PYTHON) -m webbrowser -t htmlcov/index.html
 
 pep8:
 	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m pep8
