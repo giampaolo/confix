@@ -203,7 +203,9 @@ def register(section=None):
 
 class _Parser:
 
-    def __init__(self, conf_file=None, parser=None, type_check=True):
+    def __init__(self, conf_file=None, parser=None, type_check=True,
+                 parse_envvars=False, env_name_translator=None,
+                 env_value_translator=None):
         global _parsed
         if _parsed:
             raise Error('already configured (you may want to use discard() '
@@ -211,9 +213,57 @@ class _Parser:
         self.conf_file = conf_file
         self.parser = parser
         self.type_check = type_check
-        file_conf = self.get_conf_from_file()
-        self.process_conf(file_conf)
+        self.parse_envvars = parse_envvars
+        self.env_name_translator = env_name_translator
+        self.env_value_translator = env_value_translator
+        if self.env_name_translator is None:
+            self.env_name_translator = self.default_env_name_translator
+        else:
+            assert callable(env_name_translator), env_name_translator
+        if self.env_value_translator is None:
+            self.env_value_translator = self.default_env_value_translator
+        else:
+            assert callable(env_value_translator), env_value_translator
+
+        conf = self.get_conf_from_file()
+        if parse_envvars:
+            conf.update(self.get_conf_from_env())
+        self.process_conf(conf)
         _parsed = True
+
+    @staticmethod
+    def default_env_name_translator(name):
+        return name.lower()
+
+    @staticmethod
+    def default_env_value_translator(value, default_value, name=None):
+        if isinstance(default_value, bool):
+            if value.lower() in {'y', 'yes', 't', 'true', 'on', '1'}:
+                value = True
+            elif value.lower() in {'n', 'no', 'f', 'false', 'off', '0'}:
+                value = False
+        elif isinstance(default_value, int):
+            value = int(value)
+        elif isinstance(default_value, float):
+            value = float(value)
+        return value
+
+    def get_conf_from_env(self):
+        # TODO: support section
+        conf_class_inst = _conf_map[None]
+        conf_class_names = set(conf_class_inst.__dict__.keys())
+
+        conf = {}
+        env = os.environ.copy()
+        for name, value in env.items():
+            if self.env_name_translator is not None:
+                name = self.env_name_translator(name)
+            if name in conf_class_names:
+                default_value = getattr(conf_class_inst, name)
+                value = self.env_value_translator(value, default_value,
+                                                  name=name)
+                conf[name] = value
+        return conf
 
     def get_conf_from_file(self):
         # no conf file
@@ -314,17 +364,44 @@ def parse(conf_file=None, parser=None, type_check=True):
     Params:
 
     - (str|file) conf_file: a path to a configuration file or an
-      existing file-like object.
+      existing file-like object or None.
+      If `None` configuration class will be parsed anyway in order
+      to validate `schema`s.
 
     - (callable) parser: the function parsing the configuration file
-      and converting it to a dict.  If None a default parser will
+      and converting it to a dict.  If `None` a default parser will
       be picked up depending on the file extension.
 
-    - (bool) type_check: when True raises exception in case an option
-      specified in the configuration file has a different type than
-      the one defined in the configuration class.
+    - (bool) type_check: when `True` raise `TypesMismatchError` in
+      case an option specified in the configuration file has a different
+      type than the one defined in the configuration class.
     """
-    _Parser(conf_file, parser, type_check)
+    _Parser(conf_file=conf_file, parser=parser, type_check=type_check)
+
+
+def parse_with_envvars(conf_file=None, parser=None, type_check=True,
+                       name_translator=None, value_translator=None):
+    """Same as parse() but also takes environment variables into account.
+    The order of precedence is:
+
+    env-var -> conf-file -> conf-class
+
+    - (callable) name_translator: a callable which is used to convert
+      all the environment variable names before processing.
+      By default all names in os.environ will be lowercase()d.
+      If you don't want this pass `name_translator=lambda x: x`
+      (but also your config class will have to use upper cased names).
+
+    - (callable) value_translator: a callable which is used to convert
+      the environment variable values.
+      If a name match is found this function will receive the env var
+      value and the config class value. If config class value is
+      an int, float or bool the value will be changed in accordance.
+    """
+    _Parser(conf_file=conf_file, parser=parser, type_check=type_check,
+            parse_envvars=True,
+            env_name_translator=name_translator,
+            env_value_translator=value_translator)
 
 
 def discard():

@@ -11,7 +11,7 @@ import sys
 # except ImportError:
 #     import ConfigParser as configparser
 
-from confix import register, parse, discard, schema
+from confix import register, parse, parse_with_envvars, discard, schema
 from confix import Error, InvalidKeyError, RequiredKeyError
 from confix import ValidationError
 
@@ -275,6 +275,39 @@ class TestBase(object):
             dict(foo=5)
         )
         self.assertRaises(TypeError, doit, self.TESTFN)
+
+    # --- parse_with_envvars
+
+    def test_envvars_base(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+            apple = 3
+        self.dict_to_file(
+            dict(foo=5)
+        )
+        os.environ['APPLE'] = '10'
+        parse_with_envvars(self.TESTFN)
+        self.assertEqual(config.foo, 5)
+        self.assertEqual(config.bar, 2)
+        self.assertEqual(config.apple, 10)
+
+    def test_envvars_missed_name(self):
+        #
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+            apple = 3
+        self.dict_to_file(
+            dict(foo=5)
+        )
+        os.environ['APPLE'] = '10'
+        parse_with_envvars(self.TESTFN)
+        self.assertEqual(config.foo, 5)
+        self.assertEqual(config.bar, 2)
+        self.assertEqual(config.apple, 10)
 
 
 # ===================================================================
