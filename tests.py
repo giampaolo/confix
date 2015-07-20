@@ -140,22 +140,21 @@ class TestBase(object):
         # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'apple')
 
-    # TODO: make this reliable across different languages
-    # def test_types_mismatch(self):
-    #     @register('name')#
-    #     class config:
-    #         foo = 1
-    #         bar = 2
-    #     self.dict_to_file({
-    #         THIS_MODULE: dict(foo=5, bar='6')
-    #     })
+    def test_types_mismatch(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+        self.dict_to_file(
+            dict(foo=5, bar='6')
+        )
 
-    #     with self.assertRaises(TypesMismatchError) as cm:
-    #         parse(self.TESTFN)
-    #     self.assertEqual(cm.exception.section, 'name')
-    #     self.assertEqual(cm.exception.key, 'bar')
-    #     self.assertEqual(cm.exception.default_value, 2)
-    #     self.assertEqual(cm.exception.new_value, '6')
+        with self.assertRaises(TypesMismatchError) as cm:
+            parse(self.TESTFN)
+        # self.assertEqual(cm.exception.section, 'name')
+        self.assertEqual(cm.exception.key, 'bar')
+        self.assertEqual(cm.exception.default_value, 2)
+        self.assertEqual(cm.exception.new_value, '6')
 
     # def test_invalid_yaml_file(self):
     #     self.dict_to_file('?!?')
@@ -545,6 +544,11 @@ class TestMisc(unittest.TestCase):
 
         file = io.StringIO()
         parse(file, file_parser=lambda x: {})
+
+    def test_envvar_parser_not_callable(self):
+        with self.assertRaises(TypeError) as exc:
+            parse_with_envvars(envvar_parser=1)
+        self.assertIn("not a callable", exc.exception.message)
 
 
 def main():
