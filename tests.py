@@ -12,7 +12,7 @@ import sys
 #     import ConfigParser as configparser
 
 from confix import register, parse, parse_with_envvars, discard, schema
-from confix import Error, InvalidKeyError, RequiredKeyError
+from confix import Error, InvalidKeyError, RequiredKeyError, TypesMismatchError
 from confix import ValidationError
 
 try:
@@ -298,14 +298,29 @@ class TestBase(object):
         class config:
             some_int = 1
             some_float = 1.0
-            some_bool = True
+            some_true_bool = True
+            some_false_bool = True
         os.environ['SOME_INT'] = '2'
         os.environ['SOME_FLOAT'] = '2.0'
-        os.environ['SOME_BOOL'] = 'false'
+        os.environ['SOME_TRUE_BOOL'] = 'false'
+        os.environ['SOME_FALSE_BOOL'] = 'true'
         parse_with_envvars()
         self.assertEqual(config.some_int, 2)
         self.assertEqual(config.some_float, 2.0)
-        self.assertEqual(config.some_bool, False)
+        self.assertEqual(config.some_true_bool, False)
+        self.assertEqual(config.some_false_bool, True)
+
+    def test_envvars_type_mismatch(self):
+        @register()
+        class config:
+            some_int = 1
+        os.environ['SOME_INT'] = 'foo'
+        with self.assertRaises(TypesMismatchError) as cm:
+            parse_with_envvars()
+        # self.assertEqual(cm.exception.section, 'name')
+        self.assertEqual(cm.exception.key, 'some_int')
+        self.assertEqual(cm.exception.default_value, 1)
+        self.assertEqual(cm.exception.new_value, 'foo')
 
 
 # ===================================================================

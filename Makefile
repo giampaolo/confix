@@ -65,7 +65,7 @@ coverage: install
 	$(PYTHON) -m coverage report
 	@echo "writing results to htmlcov/index.html"
 	$(PYTHON) -m coverage html
-	$(PYTHON) -m webbrowser -t htmlcov/index.html
+	$(PYTHON) -m webbrowser -t htmlcov/confix.html
 
 pep8:
 	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m pep8

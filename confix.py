@@ -114,8 +114,8 @@ class TypesMismatchError(Error):
     def __str__(self):
         # TODO: rephrase
         return self.msg or \
-            "%s type mismatch expected %r, got %r" % (
-                self.key, type(self.default_value), type(self.new_value))
+            "type mismatch for key %r (default_value=%r) got %r" % (
+                self.key, self.default_value, self.new_value)
 
 
 # --- utils
@@ -258,9 +258,15 @@ class _Parser:
             elif value.lower() in set(('n', 'no', 'f', 'false', 'off', '0')):
                 value = False
         elif isinstance(default_value, int):
-            value = int(value)
+            try:
+                value = int(value)
+            except ValueError:
+                raise TypesMismatchError(name, default_value, value)
         elif isinstance(default_value, float):
-            value = float(value)
+            try:
+                value = float(value)
+            except ValueError:
+                raise TypesMismatchError(name, default_value, value)
         _log("envvar=%s, value=%r, default_value=%r, "
              "casted_to=%r" % (name, value, default_value, value))
         return value
