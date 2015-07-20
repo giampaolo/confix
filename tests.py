@@ -89,11 +89,11 @@ class TestBase(object):
         @register()
         class config:
             foo = 1
-            bar = 2
+            bar = schema(10)
         self.write_to_file("   ")
         parse()
         self.assertEqual(config.foo, 1)
-        self.assertEqual(config.bar, 2)
+        self.assertEqual(config.bar, 10)
 
     def test_unknown_format(self):
         with open(TESTFN, 'w') as f:

@@ -168,7 +168,7 @@ def parse_json(file):
 # --- public API
 
 _conf_map = {}
-_conf_file = None
+_parsed = False
 _DEFAULT = object()
 
 
@@ -278,8 +278,8 @@ def parse(conf_file=None, parser=None, type_check=True):
       specified in the configuration file has a different type than
       the one defined in the configuration class.
     """
-    global _conf_file
-    if _conf_file is not None:
+    global _parsed
+    if _parsed:
         raise Error('already configured (you may want to use discard() '
                     'then call parse() again')
     if conf_file is not None:
@@ -307,19 +307,15 @@ def parse(conf_file=None, parser=None, type_check=True):
         # TODO: use a copy of _conf_map and set it at the end of this
         #       procedure?
         # TODO: should we use threading.[R]Lock (probably safer)?
-        if isinstance(file_conf, dict):
-            _process_conf(file_conf, type_check)
-        else:
-            # empty conf file
-            if file_conf is not None:
-                raise Error('invalid configuration file %r' % file.name)
+        _process_conf(file_conf or {}, type_check)
+    else:
+        _process_conf({}, type_check)
 
-    if conf_file is not None:
-        _conf_file = file
+    _parsed = True
 
 
 def discard():
     """Discard previous configuration (if any)."""
-    global _conf_file
+    global _parsed
     _conf_map.clear()
-    _conf_file = None
+    _parsed = False
