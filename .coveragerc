@@ -4,8 +4,8 @@ include =
     *confix*
 
 omit =
-    test/*
-    *setup*
+    tests.py
+    setup.py
 
 exclude_lines =
     pragma: no cover

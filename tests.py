@@ -293,21 +293,19 @@ class TestBase(object):
         self.assertEqual(config.bar, 2)
         self.assertEqual(config.apple, 10)
 
-    def test_envvars_missed_name(self):
-        #
+    def test_envvars_convert_type(self):
         @register()
         class config:
-            foo = 1
-            bar = 2
-            apple = 3
-        self.dict_to_file(
-            dict(foo=5)
-        )
-        os.environ['APPLE'] = '10'
-        parse_with_envvars(self.TESTFN)
-        self.assertEqual(config.foo, 5)
-        self.assertEqual(config.bar, 2)
-        self.assertEqual(config.apple, 10)
+            some_int = 1
+            some_float = 1.0
+            some_bool = True
+        os.environ['SOME_INT'] = '2'
+        os.environ['SOME_FLOAT'] = '2.0'
+        os.environ['SOME_BOOL'] = 'false'
+        parse_with_envvars()
+        self.assertEqual(config.some_int, 2)
+        self.assertEqual(config.some_float, 2.0)
+        self.assertEqual(config.some_bool, False)
 
 
 # ===================================================================
