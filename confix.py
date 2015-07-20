@@ -230,7 +230,7 @@ def _validate_conf(conf, type_check):
                 setattr(inst, key, new_value)
 
 
-def parse(conf_file, parser=None, type_check=True):
+def parse(conf_file=None, parser=None, type_check=True):
     """Parse a configuration file in order to overwrite the previously
     registered configuration classes.
 
@@ -251,34 +251,36 @@ def parse(conf_file, parser=None, type_check=True):
     if _conf_file is not None:
         raise Error('already configured (you may want to use discard() '
                     'then call parse() again')
-    if isinstance(conf_file, basestring):
-        # 'r' looks mandatory on Python 3.X
-        file = open(conf_file, 'r')
-    with file:
-        pmap = {'.yaml': parse_yaml,
-                '.yml': parse_yaml,
-                '.toml': parse_toml,
-                '.json': parse_json,
-                '.ini': parse_ini}
-        if parser is None:
-            if not hasattr(file, 'name'):
-                raise ValueError("can't determine format from a file object "
-                                 "with no 'name' attribute")
-            try:
-                ext = os.path.splitext(file.name)[1]
-                parser = pmap[ext]
-            except KeyError:
-                raise ValueError("don't know how to parse %r" % file.name)
-        file_conf = parser(file)
+    if conf_file is not None:
+        if isinstance(conf_file, basestring):
+            # 'r' looks mandatory on Python 3.X
+            file = open(conf_file, 'r')
+        with file:
+            pmap = {'.yaml': parse_yaml,
+                    '.yml': parse_yaml,
+                    '.toml': parse_toml,
+                    '.json': parse_json,
+                    '.ini': parse_ini}
+            if parser is None:
+                if not hasattr(file, 'name'):
+                    raise ValueError("can't determine format from a file "
+                                     "object with no 'name' attribute")
+                try:
+                    ext = os.path.splitext(file.name)[1]
+                    parser = pmap[ext]
+                except KeyError:
+                    raise ValueError("don't know how to parse %r" % file.name)
+            file_conf = parser(file)
 
-    # TODO: use a copy of _conf_map and set it at the end of this
-    #       procedure?
-    # TODO: should we use threading.[R]Lock (probably safer)?
-    if isinstance(file_conf, dict):
-        _validate_conf(file_conf, type_check)
-    else:
-        if file_conf is not None:
-            raise Error('invalid configuration file %r' % file.name)
+        # TODO: use a copy of _conf_map and set it at the end of this
+        #       procedure?
+        # TODO: should we use threading.[R]Lock (probably safer)?
+        if isinstance(file_conf, dict):
+            _validate_conf(file_conf, type_check)
+        else:
+            # empty conf file
+            if file_conf is not None:
+                raise Error('invalid configuration file %r' % file.name)
 
     # parse the configuration classes in order to collect all schemas
     # which were not overwritten by the config file
@@ -289,7 +291,8 @@ def parse(conf_file, parser=None, type_check=True):
                     raise RequiredKeyError(section, key)
                 setattr(cflet, key, value.default)
 
-    _conf_file = file
+    if conf_file is not None:
+        _conf_file = file
 
 
 def discard():

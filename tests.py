@@ -87,6 +87,15 @@ class TestBase(object):
         self.assertEqual(config.foo, 1)
         self.assertEqual(config.bar, 2)
 
+    def test_no_conf_file(self):
+        class config:
+            foo = 1
+            bar = 2
+        self.write_to_file("   ")
+        parse()
+        self.assertEqual(config.foo, 1)
+        self.assertEqual(config.bar, 2)
+
     def test_unknown_format(self):
         with open(TESTFN, 'w') as f:
             f.write('foo')
