@@ -208,13 +208,13 @@ def _process_conf(conf, type_check):
         raise NotImplementedError("multiple sections not supported yet")
 
     # TODO: support section
-    inst = _conf_map[None]
+    conf_class_inst = _conf_map[None]
 
     # iterate over file
     for key, new_value in conf.items():
         try:
             # the default value defined in the conf class
-            default_value = getattr(inst, key)
+            default_value = getattr(conf_class_inst, key)
         except AttributeError:
             # file defines a key which does not exist in the
             # conf class
@@ -249,7 +249,7 @@ def _process_conf(conf, type_check):
                 exc.value = new_value
                 raise exc
 
-        setattr(inst, key, new_value)
+        setattr(conf_class_inst, key, new_value)
 
     # parse the configuration classes in order to collect all schemas
     # which were not overwritten by the config file
