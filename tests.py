@@ -538,7 +538,7 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(Error) as exc:
             parse(file)
         self.assertEqual(
-            exc.exception.message,
+            str(exc.exception),
             "can't determine format from a file object with no 'name' "
             "attribute")
 
@@ -548,7 +548,7 @@ class TestMisc(unittest.TestCase):
     def test_envvar_parser_not_callable(self):
         with self.assertRaises(TypeError) as exc:
             parse_with_envvars(envvar_parser=1)
-        self.assertIn("not a callable", exc.exception.message)
+        self.assertIn("not a callable", str(exc.exception))
 
 
 def main():
