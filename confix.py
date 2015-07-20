@@ -15,6 +15,7 @@ Currently supports YAML, JSON and TOML serialization formats.
 import collections
 import inspect
 import json
+import logging
 import os
 import sys
 
@@ -33,6 +34,9 @@ _PY3 = sys.version_info >= (3, )
 
 if _PY3:
     basestring = str
+
+
+logger = logging.getLogger(__name__)
 
 
 # --- exceptions (public)
@@ -114,6 +118,13 @@ class TypesMismatchError(Error):
                 self.key, type(self.default_value), type(self.new_value))
 
 
+# --- utils
+
+
+def _log(s):
+    logger.debug(s)
+
+
 # --- parsers
 
 def parse_yaml(file):
@@ -190,6 +201,7 @@ def register(section=None):
             raise TypeError("register decorator is supposed to be used "
                             "against a class (got %r)" % klass)
         _conf_map[section] = klass
+        _log("registering {}.{}".format(klass.__module__, klass.__name__))
         return klass
 
     if section is not None:
@@ -198,6 +210,7 @@ def register(section=None):
     if section in _conf_map:
         raise ValueError("a conf class was already registered for "
                          "section %r")
+
     return wrapper
 
 
@@ -236,7 +249,7 @@ class _Parser:
         return name.lower()
 
     @staticmethod
-    def default_env_value_translator(value, default_value, name=None):
+    def default_env_value_translator(name, value, default_value):
         if isinstance(default_value, bool):
             if value.lower() in set('y', 'yes', 't', 'true', 'on', '1'):
                 value = True
@@ -246,6 +259,8 @@ class _Parser:
             value = int(value)
         elif isinstance(default_value, float):
             value = float(value)
+        _log("envvar={}, value={!r}, default_value={!r}, "
+             "casted_to={!r}".format(name, value, default_value, value))
         return value
 
     def get_conf_from_env(self):
@@ -260,14 +275,14 @@ class _Parser:
                 name = self.env_name_translator(name)
             if name in conf_class_names:
                 default_value = getattr(conf_class_inst, name)
-                value = self.env_value_translator(value, default_value,
-                                                  name=name)
+                value = self.env_value_translator(name, value, default_value)
                 conf[name] = value
         return conf
 
     def get_conf_from_file(self):
         # no conf file
         if self.conf_file is None:
+            _log("conf file not specified")
             if self.parser is not None:
                 raise ValueError(
                     "can't specify 'parser' option and no 'conf_file'")
@@ -277,8 +292,10 @@ class _Parser:
         # parse conf file
         if isinstance(self.conf_file, basestring):
             file = open(self.conf_file, 'r')
+            _log("using conf file {}".format(self.conf_file))
         else:
             file = self.conf_file
+            _log("using conf file-like object {}".format(self.conf_file))
         with file:
             pmap = {'.yaml': parse_yaml,
                     '.yml': parse_yaml,
@@ -332,6 +349,8 @@ class _Parser:
 
             if is_schema and default_value.validator is not None:
                 exc = None
+                _log("running validator {!r} for key {!r} with value "
+                     "{!r}".format(default_value.validator, key, new_value))
                 try:
                     ok = default_value.validator(new_value)
                 except ValidationError as err:
@@ -345,6 +364,8 @@ class _Parser:
                     exc.value = new_value
                     raise exc
 
+            _log("overring key {!r} (value={!r}) to new value {!r}".format(
+                key, getattr(conf_class_inst, key), new_value))
             setattr(conf_class_inst, key, new_value)
 
         # parse the configuration classes in order to collect all schemas
