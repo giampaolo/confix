@@ -35,6 +35,9 @@ setup-dev-env:
 	rm /tmp/get-pip.py
 	$(PYTHON) -m pip install --user --upgrade pip
 	$(PYTHON) -m pip install --user --upgrade \
+		flake8 \
+		nose \
+		pep8 \
 		pyyaml \
 		toml \
 		unittest2
@@ -42,25 +45,25 @@ setup-dev-env:
 install:
 	$(PYTHON) setup.py install --user
 
-install-deps:
-	$(PYTHON) -m pip install --upgrade --user PyYAML toml
-
 uninstall:
 	cd ..; $(PYTHON) -m pip uninstall -y -v confix
 
 test: install
 	$(PYTHON) $(TSCRIPT)
 
-# requires "pip install pep8"
+# Run a specific test by name; e.g. "make test-by-name disk_" will run
+# all test methods containing "disk_" in their name.
+# Requires "pip install nose".
+test-by-name: install
+	@$(PYTHON) -m nose $(TSCRIPT) --nocapture -v -m $(filter-out $@,$(MAKECMDGOALS))
+
 pep8:
 	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m pep8
 
-# requires "pip install pyflakes"
 pyflakes:
 	@export PYFLAKES_NODOCTEST=1 && \
 		git ls-files | grep \\.py$ | xargs $(PYTHON) -m pyflakes
 
-# requires "pip install flake8"
 flake8:
 	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m flake8
 

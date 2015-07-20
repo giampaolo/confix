@@ -91,7 +91,7 @@ class RequiredKeyError(Error):
 
 
 class TypesMismatchError(Error):
-    """Raised when confg file overrides a key having a type different
+    """Raised when config file overrides a key having a type different
     than the original one defined in the configuration class.
     """
 
