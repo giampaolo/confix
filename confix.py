@@ -201,64 +201,110 @@ def register(section=None):
     return wrapper
 
 
-def _process_conf(conf, type_check):
-    if not _conf_map:
-        raise ValueError("no registered conf classes were found")
-    if list(_conf_map.keys()) != [None]:
-        raise NotImplementedError("multiple sections not supported yet")
+class _Parser:
 
-    # TODO: support section
-    conf_class_inst = _conf_map[None]
+    def __init__(self, conf_file=None, parser=None, type_check=True):
+        global _parsed
+        if _parsed:
+            raise Error('already configured (you may want to use discard() '
+                        'then call parse() again')
+        self.conf_file = conf_file
+        self.parser = parser
+        self.type_check = type_check
+        file_conf = self.get_conf_from_file()
+        self.process_conf(file_conf)
+        _parsed = True
 
-    # iterate over file
-    for key, new_value in conf.items():
-        try:
-            # the default value defined in the conf class
-            default_value = getattr(conf_class_inst, key)
-        except AttributeError:
-            # file defines a key which does not exist in the
-            # conf class
-            raise InvalidKeyError(key)
-
-        is_schema = isinstance(default_value, schema)
-        # TODO: perhpas "not is_schema" is not necessary
-        check_type = (
-            type_check and
-            not is_schema and
-            default_value is not None and
-            new_value is not None
-        )
-        if check_type and type(new_value) != type(default_value):
-            # config file overrides a key with a type which is
-            # different than the original one defined in the
-            # conf class
-            raise TypesMismatchError(key, default_value, new_value)
-
-        if is_schema and default_value.validator is not None:
-            exc = None
-            try:
-                ok = default_value.validator(new_value)
-            except ValidationError as err:
-                exc = ValidationError(err.msg)
+    def get_conf_from_file(self):
+        # no conf file
+        if self.conf_file is None:
+            if self.parser is not None:
+                raise ValueError(
+                    "can't specify 'parser' option and no 'conf_file'")
             else:
-                if not ok:
-                    exc = ValidationError()
-            if exc is not None:
-                # exc.section = section
-                exc.key = key
-                exc.value = new_value
-                raise exc
+                return {}
 
-        setattr(conf_class_inst, key, new_value)
+        # parse conf file
+        if isinstance(self.conf_file, basestring):
+            file = open(self.conf_file, 'r')
+        else:
+            file = self.conf_file
+        with file:
+            pmap = {'.yaml': parse_yaml,
+                    '.yml': parse_yaml,
+                    '.toml': parse_toml,
+                    '.json': parse_json,
+                    # '.ini': parse_ini  # TODO
+                    }
+            if self.parser is None:
+                if not hasattr(file, 'name'):
+                    raise ValueError("can't determine format from a file "
+                                     "object with no 'name' attribute")
+                try:
+                    ext = os.path.splitext(file.name)[1]
+                    parser = pmap[ext]
+                except KeyError:
+                    raise ValueError("don't know how to parse %r" % file.name)
+            return parser(file) or {}
 
-    # parse the configuration classes in order to collect all schemas
-    # which were not overwritten by the config file
-    for section, cflet in _conf_map.items():
-        for key, value in cflet.__dict__.items():
-            if isinstance(value, schema):
-                if value.required:
-                    raise RequiredKeyError(key)
-                setattr(cflet, key, value.default)
+    def process_conf(self, conf):
+        if not _conf_map:
+            raise ValueError("no registered conf classes were found")
+        if list(_conf_map.keys()) != [None]:
+            raise NotImplementedError("multiple sections not supported yet")
+
+        # TODO: support section
+        conf_class_inst = _conf_map[None]
+
+        # iterate over file
+        for key, new_value in conf.items():
+            try:
+                # the default value defined in the conf class
+                default_value = getattr(conf_class_inst, key)
+            except AttributeError:
+                # file defines a key which does not exist in the
+                # conf class
+                raise InvalidKeyError(key)
+
+            is_schema = isinstance(default_value, schema)
+            # TODO: perhpas "not is_schema" is not necessary
+            check_type = (
+                self.type_check and
+                not is_schema and
+                default_value is not None and
+                new_value is not None
+            )
+            if check_type and type(new_value) != type(default_value):
+                # config file overrides a key with a type which is
+                # different than the original one defined in the
+                # conf class
+                raise TypesMismatchError(key, default_value, new_value)
+
+            if is_schema and default_value.validator is not None:
+                exc = None
+                try:
+                    ok = default_value.validator(new_value)
+                except ValidationError as err:
+                    exc = ValidationError(err.msg)
+                else:
+                    if not ok:
+                        exc = ValidationError()
+                if exc is not None:
+                    # exc.section = section
+                    exc.key = key
+                    exc.value = new_value
+                    raise exc
+
+            setattr(conf_class_inst, key, new_value)
+
+        # parse the configuration classes in order to collect all schemas
+        # which were not overwritten by the config file
+        for section, cflet in _conf_map.items():
+            for key, value in cflet.__dict__.items():
+                if isinstance(value, schema):
+                    if value.required:
+                        raise RequiredKeyError(key)
+                    setattr(cflet, key, value.default)
 
 
 def parse(conf_file=None, parser=None, type_check=True):
@@ -278,40 +324,7 @@ def parse(conf_file=None, parser=None, type_check=True):
       specified in the configuration file has a different type than
       the one defined in the configuration class.
     """
-    global _parsed
-    if _parsed:
-        raise Error('already configured (you may want to use discard() '
-                    'then call parse() again')
-    if conf_file is not None:
-        if isinstance(conf_file, basestring):
-            # 'r' looks mandatory on Python 3.X
-            file = open(conf_file, 'r')
-        with file:
-            pmap = {'.yaml': parse_yaml,
-                    '.yml': parse_yaml,
-                    '.toml': parse_toml,
-                    '.json': parse_json,
-                    # '.ini': parse_ini  # TODO
-                    }
-            if parser is None:
-                if not hasattr(file, 'name'):
-                    raise ValueError("can't determine format from a file "
-                                     "object with no 'name' attribute")
-                try:
-                    ext = os.path.splitext(file.name)[1]
-                    parser = pmap[ext]
-                except KeyError:
-                    raise ValueError("don't know how to parse %r" % file.name)
-            file_conf = parser(file)
-
-        # TODO: use a copy of _conf_map and set it at the end of this
-        #       procedure?
-        # TODO: should we use threading.[R]Lock (probably safer)?
-        _process_conf(file_conf or {}, type_check)
-    else:
-        _process_conf({}, type_check)
-
-    _parsed = True
+    _Parser(conf_file, parser, type_check)
 
 
 def discard():
