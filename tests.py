@@ -508,7 +508,7 @@ class TestMisc(unittest.TestCase):
         self.assertRaises(TypeError, parse_with_envvars, value_translator=1)
 
     def test_parser_with_no_file(self):
-        self.assertRaises(ValueError, parse, parser=lambda x: {})
+        self.assertRaises(ValueError, parse, file_parser=lambda x: {})
 
     def test_no_registered_class(self):
         self.assertRaises(Error, parse)

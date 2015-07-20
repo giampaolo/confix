@@ -217,7 +217,7 @@ def register(section=None):
 
 class _Parser:
 
-    def __init__(self, conf_file=None, parser=None, type_check=True,
+    def __init__(self, conf_file=None, file_parser=None, type_check=True,
                  parse_envvars=False, env_case_sensitive=False,
                  env_value_translator=None):
         global _parsed
@@ -225,7 +225,7 @@ class _Parser:
             raise Error('already configured (you may want to use discard() '
                         'then call parse() again')
         self.conf_file = conf_file
-        self.parser = parser
+        self.file_parser = file_parser
         self.type_check = type_check
         self.parse_envvars = parse_envvars
         self.env_case_sensitive = env_case_sensitive
@@ -285,7 +285,7 @@ class _Parser:
         # no conf file
         if self.conf_file is None:
             _log("conf file not specified")
-            if self.parser is not None:
+            if self.file_parser is not None:
                 raise ValueError(
                     "can't specify 'parser' option and no 'conf_file'")
             else:
@@ -305,7 +305,7 @@ class _Parser:
                     '.json': parse_json,
                     # '.ini': parse_ini  # TODO
                     }
-            if self.parser is None:
+            if self.file_parser is None:
                 if not hasattr(file, 'name'):
                     raise ValueError("can't determine format from a file "
                                      "object with no 'name' attribute")
@@ -380,7 +380,7 @@ class _Parser:
                     setattr(cflet, key, value.default)
 
 
-def parse(conf_file=None, parser=None, type_check=True):
+def parse(conf_file=None, file_parser=None, type_check=True):
     """Parse a configuration file in order to overwrite the previously
     registered configuration classes.
 
@@ -391,18 +391,21 @@ def parse(conf_file=None, parser=None, type_check=True):
       If `None` configuration class will be parsed anyway in order
       to validate `schema`s.
 
-    - (callable) parser: the function parsing the configuration file
-      and converting it to a dict.  If `None` a default parser will
-      be picked up depending on the file extension.
+    - (callable) file_parser: the function parsing the configuration
+      file and converting it to a dict.  If `None` a default parser
+      will be picked up depending on the file extension.
+      You may want to override this either to support new file
+      extensions or types.
 
     - (bool) type_check: when `True` raise `TypesMismatchError` in
       case an option specified in the configuration file has a different
       type than the one defined in the configuration class.
     """
-    _Parser(conf_file=conf_file, parser=parser, type_check=type_check)
+    _Parser(conf_file=conf_file, file_parser=file_parser,
+            type_check=type_check)
 
 
-def parse_with_envvars(conf_file=None, parser=None, type_check=True,
+def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
                        case_sensitive=False, value_translator=None):
     """Same as parse() but also takes environment variables into account.
     The order of precedence is:
@@ -419,7 +422,9 @@ def parse_with_envvars(conf_file=None, parser=None, type_check=True,
       value and the config class value. If config class value is
       an int, float or bool the value will be changed in accordance.
     """
-    _Parser(conf_file=conf_file, parser=parser, type_check=type_check,
+    _Parser(conf_file=conf_file,
+            file_parser=file_parser,
+            type_check=type_check,
             parse_envvars=True,
             env_case_sensitive=case_sensitive,
             env_value_translator=value_translator)
