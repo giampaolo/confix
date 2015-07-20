@@ -35,19 +35,18 @@ About
 A language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then **overwrite only the keys you need** from a static config file
-(be it **YAML, JSON or TOML**).
+(be it **YAML, JSON or TOML**) and/or environment variables.
 This is useful in order to avoid storing sensitive data (e.g. passwords) in
 the source code.
 
-Example:
+Example using configuration file:
 
 config file:
 
 .. code-block:: yaml
 
     # config.yaml
-    ftp:
-        password: secret
+    password: secret
 
 python file:
 
@@ -66,12 +65,37 @@ python file:
     if __name__ == '__main__':
         parse('config.yaml')    # make replacements to "config" class
         print(config.user)      # will print "ftp"
-        print(config.password)  # will print "secret"
+        print(config.password)  # will print "secret" instead of None
 
-Additional features
--------------------
 
-- supports **YAML, JSON, INI** and **TOML** serialization formats.
+...if you want to also parse environment variables:
+
+python file:
+
+.. code-block:: python
+
+    # script.py
+
+    @confix.register()
+    class conf:
+        foo = 3
+
+    if __name__ == '__main__':
+        confix.parse_with_envvars()
+        print(conf.foo)
+
+from the shell:
+
+.. code-block:: bash
+
+    $ FOO=2 python script.py
+    2
+
+
+Main features
+-------------
+
+- supports **YAML, JSON** and **TOML** serialization formats.
 - can be easily extended to support other formats.
 - support for Python 3
 - small code base
