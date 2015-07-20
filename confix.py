@@ -187,6 +187,49 @@ def register(name):
     return wrapper
 
 
+def _validate_conf(conf, type_check):
+    for section, values in conf.items():
+        inst = _conf_map.get(section, None)
+        if inst is not None:
+            assert isinstance(values, dict)
+            for key, new_value in values.items():
+                try:
+                    default_value = getattr(inst, key)
+                except AttributeError:
+                    # file defines a key which does not exist in the
+                    # conf class
+                    raise InvalidKeyError(section, key)
+
+                is_schema = isinstance(default_value, schema)
+                # TODO: perhpas "not is_schema" is not necessary
+                check_type = (type_check and not
+                              is_schema and default_value is not None and
+                              new_value is not None)
+                if check_type and type(new_value) != type(default_value):
+                    # config file overrides a key with a type which is
+                    # different than the original one defined in the
+                    # conf class
+                    raise TypesMismatchError(section, key, default_value,
+                                             new_value)
+
+                if is_schema and default_value.validator is not None:
+                    exc = None
+                    try:
+                        ok = default_value.validator(new_value)
+                    except ValidationError as err:
+                        exc = ValidationError(err.msg)
+                    else:
+                        if not ok:
+                            exc = ValidationError()
+                    if exc is not None:
+                        exc.section = section
+                        exc.key = key
+                        exc.value = new_value
+                        raise exc
+
+                setattr(inst, key, new_value)
+
+
 def parse(conf_file, parser=None, type_check=True):
     """Parse a configuration file in order to overwrite the previously
     registered configuration classes.
@@ -226,50 +269,15 @@ def parse(conf_file, parser=None, type_check=True):
                 parser = pmap[ext]
             except KeyError:
                 raise ValueError("don't know how to parse %r" % file.name)
-        conf = parser(file)
+        file_conf = parser(file)
 
     # TODO: use a copy of _conf_map and set it at the end of this
     #       procedure?
     # TODO: should we use threading.[R]Lock (probably safer)?
-    if isinstance(conf, dict):
-        for section, values in conf.items():
-            inst = _conf_map.get(section, None)
-            if inst is not None:
-                assert isinstance(values, dict)
-                for key, new_value in values.items():
-                    #
-                    try:
-                        default_value = getattr(inst, key)
-                    except AttributeError:
-                        raise InvalidKeyError(section, key)
-                    #
-                    is_schema = isinstance(default_value, schema)
-                    # TODO: perhpas "not is_schema" is not necessary
-                    check_type = (type_check and not
-                                  is_schema and default_value is not None and
-                                  new_value is not None)
-                    if check_type and type(new_value) != type(default_value):
-                        raise TypesMismatchError(section, key, default_value,
-                                                 new_value)
-                    #
-                    if is_schema and default_value.validator is not None:
-                        exc = None
-                        try:
-                            ok = default_value.validator(new_value)
-                        except ValidationError as err:
-                            exc = ValidationError(err.msg)
-                        else:
-                            if not ok:
-                                exc = ValidationError()
-                        if exc is not None:
-                            exc.section = section
-                            exc.key = key
-                            exc.value = new_value
-                            raise exc
-
-                    setattr(inst, key, new_value)
+    if isinstance(file_conf, dict):
+        _validate_conf(file_conf, type_check)
     else:
-        if conf is not None:
+        if file_conf is not None:
             raise Error('invalid configuration file %r' % file.name)
 
     # parse the configuration classes in order to collect all schemas
@@ -280,6 +288,7 @@ def parse(conf_file, parser=None, type_check=True):
                 if value.required:
                     raise RequiredKeyError(section, key)
                 setattr(cflet, key, value.default)
+
     _conf_file = file
 
 

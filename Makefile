@@ -26,6 +26,19 @@ clean:
 	rm -rf dist
 	rm -rf docs/_build
 
+# useful deps which are nice to have while developing / testing
+setup-dev-env:
+	python -c "import urllib2; \
+			   r = urllib2.urlopen('https://bootstrap.pypa.io/get-pip.py'); \
+			   open('/tmp/get-pip.py', 'w').write(r.read());"
+	$(PYTHON) /tmp/get-pip.py --user
+	rm /tmp/get-pip.py
+	$(PYTHON) -m pip install --user --upgrade pip
+	$(PYTHON) -m pip install --user --upgrade \
+		pyyaml \
+		toml \
+		unittest2
+
 install:
 	$(PYTHON) setup.py install --user
 
@@ -58,7 +71,7 @@ upload-src: clean
 # git-tag a new release
 git-tag-release:
 	git tag -a release-`python -c "import setup; print(setup.get_version())"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`
-	echo "done; now run 'git push --follow-tags' to push the new tag on the remote repo"
+	git push --follow-tags
 
 # install GIT pre-commit hook
 install-git-hooks:
