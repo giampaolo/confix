@@ -176,13 +176,13 @@ class schema(collections.namedtuple('field',
         return super(schema, cls).__new__(cls, default, required, validator)
 
 
-def register(name):
+def register(section):
     """Register a configuration class which will be parsed later."""
     def wrapper(klass):
         if not inspect.isclass(klass):
             raise TypeError("register decorator is supposed to be used "
                             "against a class (got %r)" % klass)
-        _conf_map[name] = klass
+        _conf_map[section] = klass
         return klass
     return wrapper
 
