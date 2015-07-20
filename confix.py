@@ -201,7 +201,7 @@ def register(section=None):
             raise TypeError("register decorator is supposed to be used "
                             "against a class (got %r)" % klass)
         _conf_map[section] = klass
-        _log("registering {}.{}".format(klass.__module__, klass.__name__))
+        _log("registering %s.%s" % (klass.__module__, klass.__name__))
         return klass
 
     if section is not None:
@@ -232,11 +232,13 @@ class _Parser:
         if self.env_name_translator is None:
             self.env_name_translator = self.default_env_name_translator
         else:
-            assert callable(env_name_translator), env_name_translator
+            if not callable(env_name_translator):
+                raise TypeError("env_name_translator is not callable")
         if self.env_value_translator is None:
             self.env_value_translator = self.default_env_value_translator
         else:
-            assert callable(env_value_translator), env_value_translator
+            if not callable(env_value_translator):
+                raise TypeError("env_value_translator is not callable")
 
         conf = self.get_conf_from_file()
         if parse_envvars:
@@ -259,8 +261,8 @@ class _Parser:
             value = int(value)
         elif isinstance(default_value, float):
             value = float(value)
-        _log("envvar={}, value={!r}, default_value={!r}, "
-             "casted_to={!r}".format(name, value, default_value, value))
+        _log("envvar=%s, value=%r, default_value=%r, "
+             "casted_to=%r" % (name, value, default_value, value))
         return value
 
     def get_conf_from_env(self):
@@ -292,10 +294,10 @@ class _Parser:
         # parse conf file
         if isinstance(self.conf_file, basestring):
             file = open(self.conf_file, 'r')
-            _log("using conf file {}".format(self.conf_file))
+            _log("using conf file %s" % (self.conf_file))
         else:
             file = self.conf_file
-            _log("using conf file-like object {}".format(self.conf_file))
+            _log("using conf file-like object %s" % (self.conf_file))
         with file:
             pmap = {'.yaml': parse_yaml,
                     '.yml': parse_yaml,
@@ -316,7 +318,7 @@ class _Parser:
 
     def process_conf(self, conf):
         if not _conf_map:
-            raise ValueError("no registered conf classes were found")
+            raise Error("no registered conf classes were found")
         if list(_conf_map.keys()) != [None]:
             raise NotImplementedError("multiple sections not supported yet")
 
@@ -349,8 +351,8 @@ class _Parser:
 
             if is_schema and default_value.validator is not None:
                 exc = None
-                _log("running validator {!r} for key {!r} with value "
-                     "{!r}".format(default_value.validator, key, new_value))
+                _log("running validator %r for key %r with value "
+                     "%r".format(default_value.validator, key, new_value))
                 try:
                     ok = default_value.validator(new_value)
                 except ValidationError as err:
@@ -364,7 +366,7 @@ class _Parser:
                     exc.value = new_value
                     raise exc
 
-            _log("overring key {!r} (value={!r}) to new value {!r}".format(
+            _log("overring key %r (value=%r) to new value %r".format(
                 key, getattr(conf_class_inst, key), new_value))
             setattr(conf_class_inst, key, new_value)
 

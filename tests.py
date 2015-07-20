@@ -439,6 +439,42 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #             discard()
 
 
+# ===================================================================
+# tests misc
+# ===================================================================
+
+
+class TestMisc(unittest.TestCase):
+
+    TESTFN = None
+
+    def tearDown(self):
+        discard()
+        if self.TESTFN is not None:
+            unlink(self.TESTFN)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.TESTFN is not None:
+            unlink(TESTFN)
+
+    def test_decorate_fun(self):
+        with self.assertRaises(TypeError):
+            @register()
+            def foo():
+                pass
+
+    def test_translators_not_callable(self):
+        self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
+        self.assertRaises(TypeError, parse_with_envvars, value_translator=1)
+
+    def test_parser_with_no_file(self):
+        self.assertRaises(ValueError, parse, parser=lambda x: {})
+
+    def test_no_registered_class(self):
+        self.assertRaises(Error, parse)
+
+
 def main():
     verbosity = 1 if 'TOX' in os.environ else 2
     unittest.main(verbosity=verbosity)
