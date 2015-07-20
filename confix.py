@@ -31,6 +31,8 @@ __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 
 _PY3 = sys.version_info >= (3, )
+_BOOL_TRUE = set(('y', 'yes', 't', 'true', 'on', '1'))
+_BOOL_FALSE = set(('n', 'no', 'f', 'false', 'off', '0'))
 
 if _PY3:
     basestring = str
@@ -70,6 +72,7 @@ class ValidationError(Error):
 
 
 # --- exceptions (internal)
+
 
 class UnrecognizedKeyError(Error):
     """Raised when the configuration class does not define a key but
@@ -113,7 +116,6 @@ class TypesMismatchError(Error):
         self.msg = msg
 
     def __str__(self):
-        # TODO: rephrase
         return self.msg or \
             "type mismatch for key %r (default_value=%r) got %r" % (
                 self.key, self.default_value, self.new_value)
@@ -147,6 +149,27 @@ def parse_json(file):
     return json.loads(content)
 
 
+def parse_envvar(name, value, default_value):
+    if isinstance(default_value, bool):
+        if value.lower() in _BOOL_TRUE:
+            value = True
+        elif value.lower() in _BOOL_FALSE:
+            value = False
+    elif isinstance(default_value, int):
+        try:
+            value = int(value)
+        except ValueError:
+            raise TypesMismatchError(name, default_value, value)
+    elif isinstance(default_value, float):
+        try:
+            value = float(value)
+        except ValueError:
+            raise TypesMismatchError(name, default_value, value)
+    _log("envvar=%s, value=%r, default_value=%r, "
+         "casted_to=%r" % (name, value, default_value, value))
+    return value
+
+
 # TODO
 
 # def parse_ini(file):
@@ -178,6 +201,7 @@ def parse_json(file):
 
 
 # --- public API
+
 
 _conf_map = {}
 _parsed = False
@@ -231,7 +255,7 @@ class _Parser:
         self.envvar_case_sensitive = envvar_case_sensitive
         self.envvar_parser = envvar_parser
         if self.envvar_parser is None:
-            self.envvar_parser = self.default_envvar_parser
+            self.envvar_parser = parse_envvar
         else:
             if not callable(envvar_parser):
                 raise TypeError("envvar_parser is not a callable")
@@ -241,27 +265,6 @@ class _Parser:
             conf.update(self.get_conf_from_env())
         self.process_conf(conf)
         _parsed = True
-
-    @staticmethod
-    def default_envvar_parser(name, value, default_value):
-        if isinstance(default_value, bool):
-            if value.lower() in set(('y', 'yes', 't', 'true', 'on', '1')):
-                value = True
-            elif value.lower() in set(('n', 'no', 'f', 'false', 'off', '0')):
-                value = False
-        elif isinstance(default_value, int):
-            try:
-                value = int(value)
-            except ValueError:
-                raise TypesMismatchError(name, default_value, value)
-        elif isinstance(default_value, float):
-            try:
-                value = float(value)
-            except ValueError:
-                raise TypesMismatchError(name, default_value, value)
-        _log("envvar=%s, value=%r, default_value=%r, "
-             "casted_to=%r" % (name, value, default_value, value))
-        return value
 
     def get_conf_from_env(self):
         # TODO: support section
