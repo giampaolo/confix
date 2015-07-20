@@ -238,9 +238,9 @@ class _Parser:
     @staticmethod
     def default_env_value_translator(value, default_value, name=None):
         if isinstance(default_value, bool):
-            if value.lower() in {'y', 'yes', 't', 'true', 'on', '1'}:
+            if value.lower() in set('y', 'yes', 't', 'true', 'on', '1'):
                 value = True
-            elif value.lower() in {'n', 'no', 'f', 'false', 'off', '0'}:
+            elif value.lower() in set('n', 'no', 'f', 'false', 'off', '0'):
                 value = False
         elif isinstance(default_value, int):
             value = int(value)

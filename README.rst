@@ -6,6 +6,10 @@
     :target: https://travis-ci.org/giampaolo/confix
     :alt: Linux tests (Travis)
 
+.. image:: https://coveralls.io/repos/giampaolo/confix/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/giampaolo/confix?branch=master
+    :alt: Test coverage (coverall.io)
+
 .. image:: https://img.shields.io/pypi/v/confix.svg
     :target: https://pypi.python.org/pypi/confix/
     :alt: Latest version
