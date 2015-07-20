@@ -307,13 +307,15 @@ class _Parser:
                     }
             if self.file_parser is None:
                 if not hasattr(file, 'name'):
-                    raise ValueError("can't determine format from a file "
-                                     "object with no 'name' attribute")
+                    raise Error("can't determine format from a file "
+                                "object with no 'name' attribute")
                 try:
                     ext = os.path.splitext(file.name)[1]
                     parser = pmap[ext]
                 except KeyError:
                     raise ValueError("don't know how to parse %r" % file.name)
+            else:
+                parser = self.file_parser
             return parser(file) or {}
 
     def process_conf(self, conf):

@@ -2,6 +2,7 @@
 # -test parse()'s 'format' parameter
 
 import errno
+import io
 import json
 import os
 import sys
@@ -528,6 +529,22 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(
             str(exc),
             "type mismatch for key 'foo' (default_value=1) got 'bar'")
+
+    def test_file_like(self):
+        @register()
+        class foo:
+            foo = 1
+
+        file = io.StringIO()
+        with self.assertRaises(Error) as exc:
+            parse(file)
+        self.assertEqual(
+            exc.exception.message,
+            "can't determine format from a file object with no 'name' "
+            "attribute")
+
+        file = io.StringIO()
+        parse(file, file_parser=lambda x: {})
 
 
 def main():
