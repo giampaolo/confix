@@ -5,14 +5,14 @@ import errno
 import json
 import os
 import sys
-import textwrap
-try:
-    import configparser  # py3
-except ImportError:
-    import ConfigParser as configparser
+# import textwrap
+# try:
+#     import configparser  # py3
+# except ImportError:
+#     import ConfigParser as configparser
 
 from confix import register, parse, discard, schema
-from confix import Error, InvalidKeyError, TypesMismatchError, RequiredKeyError
+from confix import Error, InvalidKeyError, RequiredKeyError
 from confix import ValidationError
 
 try:
@@ -25,11 +25,11 @@ except ImportError:
     yaml = None
 
 PY3 = sys.version_info >= (3, )
-if PY3:
-    import io
-    StringIO = io.StringIO
-else:
-    from StringIO import StringIO
+# if PY3:
+#     import io
+#     StringIO = io.StringIO
+# else:
+#     from StringIO import StringIO
 
 if sys.version_info >= (2, 7):
     import unittest
@@ -72,13 +72,11 @@ class TestBase(object):
 
     @classmethod
     def write_to_file(cls, content, fname=None):
-        if fname is None:
-            fname = cls.TESTFN
-        with open(fname, 'w') as f:
+        with open(fname or cls.TESTFN, 'w') as f:
             f.write(content)
 
     def test_empty_conf_file(self):
-        @register('name')
+        @register()
         class config:
             foo = 1
             bar = 2
@@ -88,6 +86,7 @@ class TestBase(object):
         self.assertEqual(config.bar, 2)
 
     def test_no_conf_file(self):
+        @register()
         class config:
             foo = 1
             bar = 2
@@ -103,40 +102,40 @@ class TestBase(object):
         self.assertRaises(ValueError, parse, TESTFN)
 
     def test_conf_file_overrides_one(self):
-        @register('name')
+        @register()
         class config:
             foo = 1
             bar = 2
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         parse(self.TESTFN)
         self.assertEqual(config.foo, 5)
         self.assertEqual(config.bar, 2)
 
     def test_conf_file_overrides_both(self):
-        @register('name')
+        @register()
         class config:
             foo = 1
             bar = 2
-        self.dict_to_file({
-            'name': dict(foo=5, bar=6)
-        })
+        self.dict_to_file(
+            dict(foo=5, bar=6)
+        )
         parse(self.TESTFN)
         self.assertEqual(config.foo, 5)
         self.assertEqual(config.bar, 6)
 
     def test_invalid_field(self):
-        @register('name')
+        @register()
         class config:
             foo = 1
             bar = 2
-        self.dict_to_file({
-            'name': dict(foo=5, apple=6)
-        })
+        self.dict_to_file(
+            dict(foo=5, apple=6)
+        )
         with self.assertRaises(InvalidKeyError) as cm:
             parse(self.TESTFN)
-        self.assertEqual(cm.exception.section, 'name')
+        # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'apple')
 
     # TODO: make this reliable across different languages
@@ -162,18 +161,18 @@ class TestBase(object):
     #         parse(self.TESTFN)
 
     def test_already_configured(self):
-        @register('name')
+        @register()
         class config:
             foo = 1
             bar = 2
-        self.dict_to_file({
-            'name': dict(foo=5, bar=6)
-        })
+        self.dict_to_file(
+            dict(foo=5, bar=6)
+        )
         parse(self.TESTFN)
         self.assertRaises(Error, parse, self.TESTFN)
 
     def test_schema_base(self):
-        @register('name')
+        @register()
         class config:
             foo = schema(10)
         self.dict_to_file({})
@@ -181,25 +180,25 @@ class TestBase(object):
         self.assertEqual(config.foo, 10)
 
     def test_schema_base_required(self):
-        @register('name')
+        @register()
         class config:
             foo = schema(10, required=True)
             bar = 2
-        self.dict_to_file({
-            'name': dict(bar=2)
-        })
+        self.dict_to_file(
+            dict(bar=2)
+        )
         with self.assertRaises(RequiredKeyError) as cm:
             parse(self.TESTFN)
-        self.assertEqual(cm.exception.section, 'name')
+        # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'foo')
 
     def test_schema_base_overwritten(self):
-        @register('name')
+        @register()
         class config:
             foo = schema(10, required=True)
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         parse(self.TESTFN)
         self.assertEqual(config.foo, 5)
 
@@ -210,24 +209,24 @@ class TestBase(object):
         self.assertRaises(ValueError, schema, 10, False, 'foo')
 
     def test_validator_ok(self):
-        @register('name')
+        @register()
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, int))
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         parse(self.TESTFN)
 
     def test_validator_ko(self):
-        @register('name')
+        @register()
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, str))
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         with self.assertRaises(ValidationError) as cm:
             parse(self.TESTFN)
-        self.assertEqual(cm.exception.section, 'name')
+        # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'foo')
         self.assertEqual(cm.exception.value, 5)
 
@@ -235,15 +234,15 @@ class TestBase(object):
         def validator(value):
             raise ValidationError('message')
 
-        @register('name')
+        @register()
         class config:
             foo = schema(10, validator=validator)
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         with self.assertRaises(ValidationError) as cm:
             parse(self.TESTFN)
-        self.assertEqual(cm.exception.section, 'name')
+        # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'foo')
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, 'message')
@@ -252,15 +251,15 @@ class TestBase(object):
         def validator(value):
             raise ValidationError
 
-        @register('name')
+        @register()
         class config:
             foo = schema(10, validator=validator)
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         with self.assertRaises(ValidationError) as cm:
             parse(self.TESTFN)
-        self.assertEqual(cm.exception.section, 'name')
+        # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'foo')
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, None)
@@ -268,13 +267,13 @@ class TestBase(object):
 
     def test_register_invalid_type(self):
         def doit():
-            @register('name')
+            @register()
             def config():
                 pass
 
-        self.dict_to_file({
-            'name': dict(foo=5)
-        })
+        self.dict_to_file(
+            dict(foo=5)
+        )
         self.assertRaises(TypeError, doit, self.TESTFN)
 
 
@@ -289,35 +288,13 @@ class TestJsonMixin(TestBase, unittest.TestCase):
         self.write_to_file(json.dumps(dct))
 
 
-class TestIniMixin(TestBase, unittest.TestCase):
-    TESTFN = TESTFN + 'testfile.ini'
-
-    def dict_to_file(self, dct):
-        config = configparser.RawConfigParser()
-        for section, values in dct.items():
-            assert isinstance(section, str)
-            config.add_section(section)
-            for key, value in values.items():
-                config.set(section, key, value)
-        fl = StringIO()
-        config.write(fl)
-        fl.seek(0)
-        content = fl.read()
-        self.write_to_file(content)
-
-
 @unittest.skipUnless(toml is not None, "toml module is not installed")
 class TestTomlMixin(TestBase, unittest.TestCase):
     TESTFN = TESTFN + 'testfile.toml'
 
     def dict_to_file(self, dct):
-        # TODO: make this more reliable
-        content = ""
-        for section, values in dct.items():
-            content += "[%s]\n" % section
-            for key, value in values.items():
-                content += "%s = %s\n" % (key, value)
-        self.write_to_file(content)
+        s = toml.dumps(dct)
+        self.write_to_file(s)
 
 
 @unittest.skipUnless(yaml is not None, "yaml module is not installed")
@@ -325,95 +302,108 @@ class TestYamlMixin(TestBase, unittest.TestCase):
     TESTFN = 'testfile.yaml'
 
     def dict_to_file(self, dct):
-        content = ""
-        for section, values in dct.items():
-            content += "%s:\n" % section
-            for key, value in values.items():
-                content += "    %s: %r\n" % (key, value)
-        self.write_to_file(content)
+        s = yaml.dump(dct, default_flow_style=False)
+        self.write_to_file(s)
+
+
+# class TestIniMixin(TestBase, unittest.TestCase):
+#     TESTFN = TESTFN + 'testfile.ini'
+
+    # def dict_to_file(self, dct):
+    #     config = configparser.RawConfigParser()
+    #     for section, values in dct.items():
+    #         assert isinstance(section, str)
+    #         config.add_section(section)
+    #         for key, value in values.items():
+    #             config.set(section, key, value)
+    #     fl = StringIO()
+    #     config.write(fl)
+    #     fl.seek(0)
+    #     content = fl.read()
+    #     self.write_to_file(content)
 
 
 # ===================================================================
 # tests for a specific format
 # ===================================================================
 
-class TestIni(unittest.TestCase):
-    TESTFN = TESTFN + '.ini'
+# class TestIni(unittest.TestCase):
+#     TESTFN = TESTFN + '.ini'
 
-    def tearDown(self):
-        discard()
-        unlink(self.TESTFN)
+#     def tearDown(self):
+#         discard()
+#         unlink(self.TESTFN)
 
-    def write_to_file(self, content):
-        with open(self.TESTFN, 'w') as f:
-            f.write(content)
+#     def write_to_file(self, content):
+#         with open(self.TESTFN, 'w') as f:
+#             f.write(content)
 
-    # XXX: should this test be common to all formats?
-    def test_int_ok(self):
-        @register('name')
-        class config:
-            foo = 1
-            bar = 2
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = 9
-        """))
-        parse(self.TESTFN)
-        self.assertEqual(config.foo, 9)
+#     # XXX: should this test be common to all formats?
+#     def test_int_ok(self):
+#         @register('name')
+#         class config:
+#             foo = 1
+#             bar = 2
+#         self.write_to_file(textwrap.dedent("""
+#             [name]
+#             foo = 9
+#         """))
+#         parse(self.TESTFN)
+#         self.assertEqual(config.foo, 9)
 
-    # XXX: should this test be common to all formats?
-    def test_int_ko(self):
-        @register('name')
-        class config:
-            foo = 1
-            bar = 2
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = '9'
-        """))
-        self.assertRaises(TypesMismatchError, parse, self.TESTFN)
+#     # XXX: should this test be common to all formats?
+#     def test_int_ko(self):
+#         @register('name')
+#         class config:
+#             foo = 1
+#             bar = 2
+#         self.write_to_file(textwrap.dedent("""
+#             [name]
+#             foo = '9'
+#         """))
+#         self.assertRaises(TypesMismatchError, parse, self.TESTFN)
 
-    def test_float(self):
-        @register('name')
-        class config:
-            foo = 1.1
-            bar = 2
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = 1.3
-        """))
-        parse(self.TESTFN)
-        self.assertEqual(config.foo, 1.3)
+#     def test_float(self):
+#         @register('name')
+#         class config:
+#             foo = 1.1
+#             bar = 2
+#         self.write_to_file(textwrap.dedent("""
+#             [name]
+#             foo = 1.3
+#         """))
+#         parse(self.TESTFN)
+#         self.assertEqual(config.foo, 1.3)
 
-    def test_true(self):
-        @register('name')
-        class config:
-            foo = None
-            bar = 2
-        true_values = ("1", "yes", "true", "on")
-        for value in true_values:
-            self.write_to_file(textwrap.dedent("""
-                [name]
-                foo = %s
-            """ % (value)))
-            parse(self.TESTFN)
-            self.assertEqual(config.foo, True)
-            discard()
+#     def test_true(self):
+#         @register('name')
+#         class config:
+#             foo = None
+#             bar = 2
+#         true_values = ("1", "yes", "true", "on")
+#         for value in true_values:
+#             self.write_to_file(textwrap.dedent("""
+#                 [name]
+#                 foo = %s
+#             """ % (value)))
+#             parse(self.TESTFN)
+#             self.assertEqual(config.foo, True)
+#             discard()
 
-    def test_false(self):
-        @register('name')
-        class config:
-            foo = None
-            bar = 2
-        true_values = ("0", "no", "false", "off")
-        for value in true_values:
-            self.write_to_file(textwrap.dedent("""
-                [name]
-                foo = %s
-            """ % (value)))
-            parse(self.TESTFN)
-            self.assertEqual(config.foo, False)
-            discard()
+#     def test_false(self):
+#         @register('name')
+#         class config:
+#             foo = None
+#             bar = 2
+#         true_values = ("0", "no", "false", "off")
+#         for value in true_values:
+#             self.write_to_file(textwrap.dedent("""
+#                 [name]
+#                 foo = %s
+#             """ % (value)))
+#             parse(self.TESTFN)
+#             self.assertEqual(config.foo, False)
+#             discard()
 
 
 def main():

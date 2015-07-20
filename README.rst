@@ -1,18 +1,20 @@
-.. image:: https://pypip.in/d/confix/badge.png
-    :target: https://crate.io/packages/confix/
-    :alt: Download this month
-
-.. image:: https://pypip.in/v/confix/badge.png
-    :target: https://pypi.python.org/pypi/confix/
-    :alt: Latest version
-
-.. image:: https://pypip.in/license/confix/badge.png
-    :target: https://pypi.python.org/pypi/confix/
-    :alt: License
+.. image:: https://img.shields.io/pypi/dm/confix.svg
+    :target: https://pypi.python.org/pypi/confix#downloads
+    :alt: Downloads this month
 
 .. image:: https://api.travis-ci.org/giampaolo/confix.png?branch=master
     :target: https://travis-ci.org/giampaolo/confix
-    :alt: Travis
+    :alt: Linux tests (Travis)
+
+.. image:: https://img.shields.io/pypi/v/confix.svg
+    :target: https://pypi.python.org/pypi/confix/
+    :alt: Latest version
+
+.. image:: https://img.shields.io/pypi/l/confix.svg
+    :target: https://pypi.python.org/pypi/confix/
+    :alt: License
+
+**Warning**: this is beta software and its API might be subject to change between versions
 
 Confix
 ======
@@ -29,7 +31,7 @@ About
 A language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then **overwrite only the keys you need** from a static config file
-(be it **YAML, JSON, INI or TOML**).
+(be it **YAML, JSON or TOML**).
 This is useful in order to avoid storing sensitive data (e.g. passwords) in
 the source code.
 
@@ -50,7 +52,7 @@ python file:
     # ftp.py
     from confix import register, parse
 
-    @register('ftp')
+    @register()
     class config:
         host = 'localhost'
         port = 2121
@@ -77,7 +79,7 @@ Additional features
   # ftp.py
   from confix import register, schema
 
-  @register('ftp')
+  @register()
   class config:
       port = schema(default=21, validator=lambda x: isinstance(x, int))
       password = schema(required=True)
@@ -85,4 +87,4 @@ Additional features
 Status
 ------
 
-Still beta, but the base API/functionality will likely remain unmodified.
+Still beta.
