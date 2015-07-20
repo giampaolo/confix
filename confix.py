@@ -218,8 +218,8 @@ def register(section=None):
 class _Parser:
 
     def __init__(self, conf_file=None, file_parser=None, type_check=True,
-                 parse_envvars=False, env_case_sensitive=False,
-                 env_value_translator=None):
+                 parse_envvars=False, envvar_case_sensitive=False,
+                 envvar_parser=None):
         global _parsed
         if _parsed:
             raise Error('already configured (you may want to use discard() '
@@ -228,13 +228,13 @@ class _Parser:
         self.file_parser = file_parser
         self.type_check = type_check
         self.parse_envvars = parse_envvars
-        self.env_case_sensitive = env_case_sensitive
-        self.env_value_translator = env_value_translator
-        if self.env_value_translator is None:
-            self.env_value_translator = self.default_env_value_translator
+        self.envvar_case_sensitive = envvar_case_sensitive
+        self.envvar_parser = envvar_parser
+        if self.envvar_parser is None:
+            self.envvar_parser = self.default_envvar_parser
         else:
-            if not callable(env_value_translator):
-                raise TypeError("env_value_translator is not callable")
+            if not callable(envvar_parser):
+                raise TypeError("envvar_parser is not a callable")
 
         conf = self.get_conf_from_file()
         if parse_envvars:
@@ -243,7 +243,7 @@ class _Parser:
         _parsed = True
 
     @staticmethod
-    def default_env_value_translator(name, value, default_value):
+    def default_envvar_parser(name, value, default_value):
         if isinstance(default_value, bool):
             if value.lower() in set(('y', 'yes', 't', 'true', 'on', '1')):
                 value = True
@@ -267,17 +267,17 @@ class _Parser:
         # TODO: support section
         conf_class_inst = _conf_map[None]
         conf_class_names = set(conf_class_inst.__dict__.keys())
-        if not self.env_case_sensitive:
+        if not self.envvar_case_sensitive:
             conf_class_names = set([x.lower() for x in conf_class_names])
 
         conf = {}
         env = os.environ.copy()
         for name, value in env.items():
-            if not self.env_case_sensitive:
+            if not self.envvar_case_sensitive:
                 name = name.lower()
             if name in conf_class_names:
                 default_value = getattr(conf_class_inst, name)
-                value = self.env_value_translator(name, value, default_value)
+                value = self.envvar_parser(name, value, default_value)
                 conf[name] = value
         return conf
 
@@ -406,7 +406,7 @@ def parse(conf_file=None, file_parser=None, type_check=True):
 
 
 def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
-                       case_sensitive=False, value_translator=None):
+                       case_sensitive=False, envvar_parser=None):
     """Same as parse() but also takes environment variables into account.
     The order of precedence is:
 
@@ -416,18 +416,19 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
       the treated the same and will override config class' key 'foo'
       (also tread case in a case insensitive manner).
 
-    - (callable) value_translator: a callable which is used to convert
-      the environment variable values.
+    - (callable) envvar_parser: a callable which is used to convert
+      each environment variable value found.
       If a name match is found this function will receive the env var
-      value and the config class value. If config class value is
-      an int, float or bool the value will be changed in accordance.
+      name, value and default value (as defined by config class.
+      If config class value is an int, float or bool the value will be
+      changed in accordance.
     """
     _Parser(conf_file=conf_file,
             file_parser=file_parser,
             type_check=type_check,
             parse_envvars=True,
-            env_case_sensitive=case_sensitive,
-            env_value_translator=value_translator)
+            envvar_case_sensitive=case_sensitive,
+            envvar_parser=envvar_parser)
 
 
 def discard():
