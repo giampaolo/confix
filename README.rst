@@ -68,29 +68,35 @@ python file:
         print(config.password)  # will print "secret" instead of None
 
 
-...if you want to also parse environment variables:
+...if you want to also parse environment variables (order of precedence:
+env-vars -> config file -> config class):
 
 python file:
 
 .. code-block:: python
 
-    # script.py
+    # ftp.py
+    from confix import register, parse_with_envvars
 
-    @confix.register()
-    class conf:
-        foo = 3
+    @register()
+    class config:
+        host = 'localhost'
+        port = 2121
+        user = 'ftp'
+        password = None         # this will be overridden later
 
     if __name__ == '__main__':
-        confix.parse_with_envvars()
-        print(conf.foo)
+        parse_with_envvars()    # make replacements to "config" class
+        print(config.user)      # will print "ftp"
+        print(config.password)  # will print "secret" instead of None
 
 from the shell:
 
 .. code-block:: bash
 
-    $ FOO=2 python script.py
-    2
-
+    $ FOO=2 python ftp.py
+    giampaolo
+    secret
 
 Main features
 -------------
