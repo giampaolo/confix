@@ -27,6 +27,7 @@ Quick links
 -----------
 
 * `Home page <https://github.com/giampaolo/confix>`__
+* `Documentation <http://pythonhosted.org/confix/>`__
 * `Blog <http://grodola.blogspot.com/search/label/confix>`__
 * `Forum <https://groups.google.com/forum/#!forum/python-confix>`__
 * `Download <https://pypi.python.org/pypi?:action=display&name=confix#downloads>`__
