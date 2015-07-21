@@ -100,7 +100,7 @@ class UnrecognizedKeyError(Error):
         return self.msg or \
             "config file provides key %r with value %r but key %r is not " \
             "defined in the config class%s" % (
-                key, self.value, self.key, plural)
+                key, self.value, key, plural)
 
 
 class RequiredKeyError(Error):
@@ -366,7 +366,7 @@ class _Parser:
                 assert isinstance(new_value, dict), new_value
                 assert new_value, new_value
                 for k, nv in new_value.items():
-                    self.process_pair(k, nv, conf_class, section=k)
+                    self.process_pair(k, nv, conf_class, section=key)
             else:
                 # We're not dealing with a section.
                 try:

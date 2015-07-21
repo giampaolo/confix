@@ -418,9 +418,13 @@ class TestBase(object):
         self.dict_to_file({
             'http': dict(username='bar'),
         })
-        self.assertRaises(UnrecognizedKeyError, parse, self.TESTFN)
+        with self.assertRaises(UnrecognizedKeyError) as cm:
+            parse(self.TESTFN)
+        self.assertEqual(cm.exception.key, 'http')
+        self.assertEqual(cm.exception.value, dict(username='bar'))
+        self.assertEqual(cm.exception.section, None)
 
-    def test_multisection_invalid_section_2(self):
+    def test_multisection_unrecognized_key(self):
         # Config file define a section key which is not defined in config
         # class.
         @register('ftp')
@@ -431,7 +435,11 @@ class TestBase(object):
         self.dict_to_file({
             'ftp': dict(password='bar'),
         })
-        self.assertRaises(UnrecognizedKeyError, parse, self.TESTFN)
+        with self.assertRaises(UnrecognizedKeyError) as cm:
+            parse(self.TESTFN)
+        self.assertEqual(cm.exception.key, 'password')
+        self.assertEqual(cm.exception.value, 'bar')
+        self.assertEqual(cm.exception.section, 'ftp')
 
 
 # ===================================================================
@@ -441,7 +449,7 @@ class TestBase(object):
 
 @unittest.skipUnless(yaml is not None, "yaml module is not installed")
 class TestYamlMixin(TestBase, unittest.TestCase):
-    TESTFN = 'testfile.yaml'
+    TESTFN = TESTFN + '.yaml'
 
     def dict_to_file(self, dct):
         s = yaml.dump(dct, default_flow_style=False)
@@ -449,7 +457,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 
 
 class TestJsonMixin(TestBase, unittest.TestCase):
-    TESTFN = TESTFN + 'testfile.json'
+    TESTFN = TESTFN + '.json'
 
     def dict_to_file(self, dct):
         self.write_to_file(json.dumps(dct))
@@ -457,7 +465,7 @@ class TestJsonMixin(TestBase, unittest.TestCase):
 
 @unittest.skipUnless(toml is not None, "toml module is not installed")
 class TestTomlMixin(TestBase, unittest.TestCase):
-    TESTFN = TESTFN + 'testfile.toml'
+    TESTFN = TESTFN + '.toml'
 
     def dict_to_file(self, dct):
         s = toml.dumps(dct)
