@@ -55,11 +55,11 @@ python file:
     @register()
     class config:
         username = 'ftp'
-        password = None     # this will be overridden by the conf file
+        password = None
 
-    parse('config.yaml')    # make replacements to "config" class
-    print(config.username)  # will print "ftp"
-    print(config.password)  # will print "secret" instead of None
+    parse('config.yaml')
+    print(config.username)
+    print(config.password)
 
 config file:
 

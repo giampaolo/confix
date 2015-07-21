@@ -43,11 +43,11 @@ python file:
     @register()
     class config:
         username = 'ftp'
-        password = None     # this will be overridden by the conf file
+        password = None
 
-    parse('config.yaml')    # make replacements to "config" class
-    print(config.username)  # will print "ftp"
-    print(config.password)  # will print "secret" instead of None
+    parse('config.yaml')
+    print(config.username)
+    print(config.password)
 
 config file:
 
@@ -313,3 +313,65 @@ A more advanced validator may look like this:
     parse_with_envvars()
     print(config.password)
 
+
+Multiple configuration classes
+==============================
+
+You may want to do this in case you have an app with different components and
+you want to control everything from a single config file having different
+sections.
+Example:
+
+python file:
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, parse
+
+    @register()
+    class config:
+        debug = False
+
+    @register(section='ftp')
+    class ftp_config:
+        port = 21
+        username = 'ftp'
+
+    @register(section='http')
+    class http_config:
+        port = 80
+        username = 'www'
+
+    parse('config.yaml')
+    print(ftp_config.port)
+    print(ftp_config.username)
+    print(http_config.port)
+    print(http_config.username)
+
+config file:
+
+.. code-block:: yaml
+
+    # config.yml
+    ftp:
+        username: ftp-custom
+    http:
+        username: http-custom
+
+shell:
+
+.. code-block:: text
+
+    $ python main.py
+    21
+    ftp-custom
+    80
+    http-custom
+
+
+Things to note:
+ - if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
+   env var via cmdline ``username`` key of both config classes would have been
+   overwritten.
+ - we may also have defined a third "root" config class, with no section.

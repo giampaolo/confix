@@ -9,7 +9,6 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # - have @register modify the conf class in order to provide / attach:
 #   - a nice __repr__
 #   - a nice __dir__
-# - re-add ini support (removed because we support section-less conf)
 
 import collections
 import inspect
