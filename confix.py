@@ -251,6 +251,7 @@ class _Parser:
     def __init__(self, conf_file=None, file_parser=None, type_check=True,
                  parse_envvars=False, envvar_case_sensitive=False,
                  envvar_parser=None):
+        """Do all the work."""
         global _parsed
         if _parsed:
             raise AlreadyParsedError
@@ -268,29 +269,15 @@ class _Parser:
 
         conf = self.get_conf_from_file()
         if parse_envvars:
+            # Note: env vars take precedence over config file.
             conf.update(self.get_conf_from_env())
         self.process_conf(conf)
         _parsed = True
 
-    def get_conf_from_env(self):
-        # TODO: support section
-        conf_class_inst = _conf_map[None]
-        conf_class_names = set(conf_class_inst.__dict__.keys())
-        if not self.envvar_case_sensitive:
-            conf_class_names = set([x.lower() for x in conf_class_names])
-
-        conf = {}
-        env = os.environ.copy()
-        for name, value in env.items():
-            if not self.envvar_case_sensitive:
-                name = name.lower()
-            if name in conf_class_names:
-                default_value = getattr(conf_class_inst, name)
-                value = self.envvar_parser(name, value, default_value)
-                conf[name] = value
-        return conf
-
     def get_conf_from_file(self):
+        """Parse config file (if any) and returns a dict representation
+        of it (can also be an empty dict).
+        """
         # no conf file
         if self.conf_file is None:
             _log("conf file not specified")
@@ -328,51 +315,28 @@ class _Parser:
                 parser = self.file_parser
             return parser(file) or {}
 
+    def get_conf_from_env(self):
+        """Iterate over all process env vars and return a dict() of
+        env vars whose name match they keys defined by conf class.
+        """
+        # TODO: support section
+        conf_class_inst = _conf_map[None]
+        conf_class_names = set(conf_class_inst.__dict__.keys())
+        if not self.envvar_case_sensitive:
+            conf_class_names = set([x.lower() for x in conf_class_names])
+
+        conf = {}
+        env = os.environ.copy()
+        for name, value in env.items():
+            if not self.envvar_case_sensitive:
+                name = name.lower()
+            if name in conf_class_names:
+                default_value = getattr(conf_class_inst, name)
+                value = self.envvar_parser(name, value, default_value)
+                conf[name] = value
+        return conf
+
     def process_conf(self, conf):
-        def process_pair(key, new_value, conf_class_inst):
-            try:
-                # the default value defined in the conf class
-                default_value = getattr(conf_class_inst, key)
-            except AttributeError:
-                # file defines a key which does not exist in the
-                # conf class
-                raise UnrecognizedKeyError(key, new_value)
-
-            is_schema = isinstance(default_value, schema)
-            # TODO: perhpas "not is_schema" is not necessary
-            check_type = (
-                self.type_check and
-                not is_schema and
-                default_value is not None and
-                new_value is not None
-            )
-            if check_type and type(new_value) != type(default_value):
-                # config file overrides a key with a type which is
-                # different than the original one defined in the
-                # conf class
-                raise TypesMismatchError(key, default_value, new_value)
-
-            if is_schema and default_value.validator is not None:
-                exc = None
-                _log("running validator %r for key %r with value "
-                     "%r".format(default_value.validator, key, new_value))
-                try:
-                    ok = default_value.validator(new_value)
-                except ValidationError as err:
-                    exc = ValidationError(err.msg)
-                else:
-                    if not ok:
-                        exc = ValidationError()
-                if exc is not None:
-                    # exc.section = section
-                    exc.key = key
-                    exc.value = new_value
-                    raise exc
-
-            _log("overring key %r (value=%r) to new value %r".format(
-                key, getattr(conf_class_inst, key), new_value))
-            setattr(conf_class_inst, key, new_value)
-
         if not _conf_map:
             raise Error("no registered conf classes were found")
         if list(_conf_map.keys()) != [None]:
@@ -391,13 +355,66 @@ class _Parser:
                 assert isinstance(new_value, dict), new_value
                 assert new_value, new_value
                 for k, nv in conf.items():
-                    process_pair(k, nv, conf_class_inst)
+                    self.process_pair(k, nv, conf_class_inst)
             else:
                 conf_class_inst = _conf_map[None]
-                process_pair(key, new_value, conf_class_inst)
+                self.process_pair(key, new_value, conf_class_inst)
 
-        # parse the configuration classes in order to collect all schemas
-        # which were not overwritten by the config file
+        self.run_last_schemas()
+
+    def process_pair(self, key, new_value, conf_class_inst):
+        """Given a key / value pair extracted either from the config
+        file or env vars process it (validate it) and override the
+        config class original key value.
+        """
+        try:
+            # the default value defined in the conf class
+            default_value = getattr(conf_class_inst, key)
+        except AttributeError:
+            # file defines a key which does not exist in the
+            # conf class
+            raise UnrecognizedKeyError(key, new_value)
+
+        is_schema = isinstance(default_value, schema)
+        # TODO: perhpas "not is_schema" is not necessary
+        check_type = (
+            self.type_check and
+            not is_schema and
+            default_value is not None and
+            new_value is not None
+        )
+        if check_type and type(new_value) != type(default_value):
+            # config file overrides a key with a type which is
+            # different than the original one defined in the
+            # conf class
+            raise TypesMismatchError(key, default_value, new_value)
+
+        if is_schema and default_value.validator is not None:
+            exc = None
+            _log("running validator %r for key %r with value "
+                 "%r".format(default_value.validator, key, new_value))
+            try:
+                ok = default_value.validator(new_value)
+            except ValidationError as err:
+                exc = ValidationError(err.msg)
+            else:
+                if not ok:
+                    exc = ValidationError()
+            if exc is not None:
+                # exc.section = section
+                exc.key = key
+                exc.value = new_value
+                raise exc
+
+        _log("overring key %r (value=%r) to new value %r".format(
+            key, getattr(conf_class_inst, key), new_value))
+        setattr(conf_class_inst, key, new_value)
+
+    @staticmethod
+    def run_last_schemas():
+        """Parse the configuration classes in order to collect all schemas
+        which were not overwritten by the config file.
+        """
         for section, cflet in _conf_map.items():
             for key, value in cflet.__dict__.items():
                 if isinstance(value, schema):
