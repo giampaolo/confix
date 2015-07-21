@@ -94,9 +94,11 @@ class UnrecognizedKeyError(Error):
         self.msg = msg
 
     def __str__(self):
+        plural = "es" if _has_multi_conf_classes() else ""
         return self.msg or \
             "config file provides key %r with value %r but key %r is not " \
-            "defined in the config class" % (self.key, self.value, self.key)
+            "defined in the config class%s" % (
+                self.key, self.value, self.key, plural)
 
 
 class RequiredKeyError(Error):
@@ -136,6 +138,11 @@ class TypesMismatchError(Error):
 
 def _log(s):
     logger.debug(s)
+
+
+def _has_multi_conf_classes():
+    """Return True if more than config class has been register()ed."""
+    return len(_conf_map) > 1
 
 
 # --- parsers
@@ -242,7 +249,7 @@ def register(section=None):
 
     if section in _conf_map:
         raise ValueError("a conf class was already registered for "
-                         "section %r")
+                         "section %r" % section)
     return wrapper
 
 
@@ -339,8 +346,6 @@ class _Parser:
     def process_conf(self, conf):
         if not _conf_map:
             raise Error("no registered conf classes were found")
-        if list(_conf_map.keys()) != [None]:
-            raise NotImplementedError("multiple sections not supported yet")
 
         # iterate over file / envvar conf
         for key, new_value in conf.items():
@@ -354,10 +359,14 @@ class _Parser:
                 conf_class_inst = _conf_map[key]
                 assert isinstance(new_value, dict), new_value
                 assert new_value, new_value
-                for k, nv in conf.items():
+                for k, nv in new_value.items():
                     self.process_pair(k, nv, conf_class_inst)
             else:
-                conf_class_inst = _conf_map[None]
+                # We're not dealing with a section.
+                try:
+                    conf_class_inst = _conf_map[None]
+                except KeyError:
+                    raise UnrecognizedKeyError(key, new_value)
                 self.process_pair(key, new_value, conf_class_inst)
 
         self.run_last_schemas()
@@ -384,10 +393,17 @@ class _Parser:
             new_value is not None
         )
         if check_type and type(new_value) != type(default_value):
-            # config file overrides a key with a type which is
+            # Config file overrides a key with a type which is
             # different than the original one defined in the
-            # conf class
-            raise TypesMismatchError(key, default_value, new_value)
+            # conf class.
+            if (not _PY3 and
+                    isinstance(new_value, basestring) and
+                    isinstance(default_value, basestring)):
+                # On Python 2 we don't want to make a distinction
+                # between str and unicode.
+                pass
+            else:
+                raise TypesMismatchError(key, default_value, new_value)
 
         if is_schema and default_value.validator is not None:
             exc = None

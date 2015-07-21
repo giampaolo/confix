@@ -307,7 +307,7 @@ class TestBase(object):
         self.assertEqual(cm.exception.msg, None)
         self.assertIn('(got 5)', str(cm.exception))
 
-    # --- parse_with_envvars
+    # --- test parse_with_envvars
 
     def test_envvars_base(self):
         @register()
@@ -382,10 +382,71 @@ class TestBase(object):
         self.assertEqual(cm.exception.default_value, 0.1)
         self.assertEqual(cm.exception.new_value, 'foo')
 
+    # --- test multiple sections
+
+    def test_multisection_multiple(self):
+        # Define two configuration classes, control them via a single
+        # conf file defining separate sections.
+        @register('ftp')
+        class ftp_config:
+            port = 21
+            username = 'ftp'
+
+        @register('http')
+        class http_config:
+            port = 80
+            username = 'www'
+
+        self.dict_to_file({
+            'ftp': dict(username='foo'),
+            'http': dict(username='bar'),
+        })
+        parse(self.TESTFN)
+        self.assertEqual(ftp_config.port, 21)
+        self.assertEqual(ftp_config.username, 'foo')
+        self.assertEqual(http_config.port, 80)
+        self.assertEqual(http_config.username, 'bar')
+
+    def test_multisection_invalid_section(self):
+        # Config file define a section which is not defined in config
+        # class.
+        @register('ftp')
+        class config:
+            port = 21
+            username = 'ftp'
+
+        self.dict_to_file({
+            'http': dict(username='bar'),
+        })
+        self.assertRaises(UnrecognizedKeyError, parse, self.TESTFN)
+
+    def test_multisection_invalid_section_2(self):
+        # Config file define a section key which is not defined in config
+        # class.
+        @register('ftp')
+        class config:
+            port = 21
+            username = 'ftp'
+
+        self.dict_to_file({
+            'ftp': dict(password='bar'),
+        })
+        self.assertRaises(UnrecognizedKeyError, parse, self.TESTFN)
+
 
 # ===================================================================
 # mixin tests
 # ===================================================================
+
+
+@unittest.skipUnless(yaml is not None, "yaml module is not installed")
+class TestYamlMixin(TestBase, unittest.TestCase):
+    TESTFN = 'testfile.yaml'
+
+    def dict_to_file(self, dct):
+        s = yaml.dump(dct, default_flow_style=False)
+        self.write_to_file(s)
+
 
 class TestJsonMixin(TestBase, unittest.TestCase):
     TESTFN = TESTFN + 'testfile.json'
@@ -400,15 +461,6 @@ class TestTomlMixin(TestBase, unittest.TestCase):
 
     def dict_to_file(self, dct):
         s = toml.dumps(dct)
-        self.write_to_file(s)
-
-
-@unittest.skipUnless(yaml is not None, "yaml module is not installed")
-class TestYamlMixin(TestBase, unittest.TestCase):
-    TESTFN = 'testfile.yaml'
-
-    def dict_to_file(self, dct):
-        s = yaml.dump(dct, default_flow_style=False)
         self.write_to_file(s)
 
 
