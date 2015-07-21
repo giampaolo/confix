@@ -2,7 +2,7 @@
 
 """
 A language-agnostic configuration parser.
-Currently supports YAML, JSON and TOML serialization formats.
+Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
 # TODO / IDEAS:
@@ -18,10 +18,10 @@ import logging
 import os
 import sys
 
-# try:
-#     import configparser  # py3
-# except ImportError:
-#     import ConfigParser as configparser
+try:
+    import configparser  # py3
+except ImportError:
+    import ConfigParser as configparser
 
 
 __all__ = ['register', 'parse', 'discard', 'schema', 'ValidationError']
@@ -198,32 +198,32 @@ def parse_envvar(name, value, default_value):
 
 # TODO
 
-# def parse_ini(file):
-#     config = configparser.ConfigParser()
-#     config.read(file.name)
-#     ret = {}
-#     bool_true = set(("1", "yes", "true", "on"))
-#     bool_false = set(("0", "no", "false", "off"))
-#     for section, values in config._sections.items():
-#         ret[section] = {}
-#         for key, value in values.items():
-#             value_stripped = value.strip()
-#             if value.isdigit():
-#                 value = int(value)
-#             elif value_stripped in bool_true:
-#                 value = True
-#             elif value_stripped in bool_false:
-#                 value = False
-#             else:
-#                 # guard against float('inf') which returns 'infinite'
-#                 if value_stripped != 'inf':
-#                     try:
-#                         value = float(value)
-#                     except ValueError:
-#                         pass
-#             ret[section][key] = value
-#         ret[section].pop('__name__', None)
-#     return ret
+def parse_ini(file):
+    config = configparser.ConfigParser()
+    config.read(file.name)
+    ret = {}
+    bool_true = set(("1", "yes", "true", "on"))
+    bool_false = set(("0", "no", "false", "off"))
+    for section, values in config._sections.items():
+        ret[section] = {}
+        for key, value in values.items():
+            value_stripped = value.strip()
+            if value.isdigit():
+                value = int(value)
+            elif value_stripped in bool_true:
+                value = True
+            elif value_stripped in bool_false:
+                value = False
+            else:
+                # guard against float('inf') which returns 'infinite'
+                if value_stripped != 'inf':
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+            ret[section][key] = value
+        ret[section].pop('__name__', None)
+    return ret
 
 
 # --- public API
@@ -314,7 +314,7 @@ class _Parser:
                     '.yml': parse_yaml,
                     '.toml': parse_toml,
                     '.json': parse_json,
-                    # '.ini': parse_ini  # TODO
+                    '.ini': parse_ini  # TODO
                     }
             if self.file_parser is None:
                 if not hasattr(file, 'name'):

@@ -6,7 +6,7 @@ import io
 import json
 import os
 import sys
-# import textwrap
+import textwrap
 # try:
 #     import configparser  # py3
 # except ImportError:
@@ -493,88 +493,89 @@ class TestTomlMixin(TestBase, unittest.TestCase):
 # tests for a specific format
 # ===================================================================
 
-# class TestIni(unittest.TestCase):
-#     TESTFN = TESTFN + '.ini'
 
-#     def tearDown(self):
-#         discard()
-#         unlink(self.TESTFN)
+class TestIni(unittest.TestCase):
+    TESTFN = TESTFN + '.ini'
 
-#     def write_to_file(self, content):
-#         with open(self.TESTFN, 'w') as f:
-#             f.write(content)
+    def tearDown(self):
+        discard()
+        unlink(self.TESTFN)
 
-#     # XXX: should this test be common to all formats?
-#     def test_int_ok(self):
-#         @register('name')
-#         class config:
-#             foo = 1
-#             bar = 2
+    def write_to_file(self, content):
+        with open(self.TESTFN, 'w') as f:
+            f.write(content)
 
-#         self.write_to_file(textwrap.dedent("""
-#             [name]
-#             foo = 9
-#         """))
-#         parse(self.TESTFN)
-#         self.assertEqual(config.foo, 9)
+    # XXX: should this test be common to all formats?
+    def test_int_ok(self):
+        @register('name')
+        class config:
+            foo = 1
+            bar = 2
 
-#     # XXX: should this test be common to all formats?
-#     def test_int_ko(self):
-#         @register('name')
-#         class config:
-#             foo = 1
-#             bar = 2
+        self.write_to_file(textwrap.dedent("""
+            [name]
+            foo = 9
+        """))
+        parse(self.TESTFN)
+        self.assertEqual(config.foo, 9)
 
-#         self.write_to_file(textwrap.dedent("""
-#             [name]
-#             foo = '9'
-#         """))
-#         self.assertRaises(TypesMismatchError, parse, self.TESTFN)
+    # XXX: should this test be common to all formats?
+    def test_int_ko(self):
+        @register('name')
+        class config:
+            foo = 1
+            bar = 2
 
-#     def test_float(self):
-#         @register('name')
-#         class config:
-#             foo = 1.1
-#             bar = 2
+        self.write_to_file(textwrap.dedent("""
+            [name]
+            foo = '9'
+        """))
+        self.assertRaises(TypesMismatchError, parse, self.TESTFN)
 
-#         self.write_to_file(textwrap.dedent("""
-#             [name]
-#             foo = 1.3
-#         """))
-#         parse(self.TESTFN)
-#         self.assertEqual(config.foo, 1.3)
+    def test_float(self):
+        @register('name')
+        class config:
+            foo = 1.1
+            bar = 2
 
-#     def test_true(self):
-#         @register('name')
-#         class config:
-#             foo = None
-#             bar = 2
+        self.write_to_file(textwrap.dedent("""
+            [name]
+            foo = 1.3
+        """))
+        parse(self.TESTFN)
+        self.assertEqual(config.foo, 1.3)
 
-#         true_values = ("1", "yes", "true", "on")
-#         for value in true_values:
-#             self.write_to_file(textwrap.dedent("""
-#                 [name]
-#                 foo = %s
-#             """ % (value)))
-#             parse(self.TESTFN)
-#             self.assertEqual(config.foo, True)
-#             discard()
+    def test_true(self):
+        true_values = ("1", "yes", "true", "on")
+        for value in true_values:
+            @register('name')
+            class config:
+                foo = None
+                bar = 2
 
-#     def test_false(self):
-#         @register('name')
-#         class config:
-#             foo = None
-#             bar = 2
+            self.write_to_file(textwrap.dedent("""
+                [name]
+                foo = %s
+            """ % (value)))
+            parse(self.TESTFN)
+            self.assertEqual(config.foo, True)
+            discard()
 
-#         true_values = ("0", "no", "false", "off")
-#         for value in true_values:
-#             self.write_to_file(textwrap.dedent("""
-#                 [name]
-#                 foo = %s
-#             """ % (value)))
-#             parse(self.TESTFN)
-#             self.assertEqual(config.foo, False)
-#             discard()
+    def test_false(self):
+        true_values = ("0", "no", "false", "off")
+        for value in true_values:
+            @register('name')
+            class config:
+                foo = None
+                bar = 2
+
+            self.write_to_file(textwrap.dedent("""
+                [name]
+                foo = %s
+            """ % (value)))
+            parse(self.TESTFN)
+            self.assertEqual(config.foo, False)
+            discard()
 
 
 # ===================================================================
