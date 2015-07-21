@@ -9,7 +9,6 @@ Currently supports YAML, JSON and TOML serialization formats.
 # - have @register modify the conf class in order to provide / attach:
 #   - a nice __repr__
 #   - a nice __dir__
-# - re-implement sections
 # - re-add ini support (removed because we support section-less conf)
 
 import collections
@@ -46,6 +45,9 @@ logger = logging.getLogger(__name__)
 class Error(Exception):
     """Base exception class from which derive all others."""
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class ValidationError(Error):
     """Raised when validation through required(validator=callable)
@@ -63,7 +65,8 @@ class ValidationError(Error):
         self.value = None
 
     def __str__(self):
-        msg = "'%s.%s'" % (self.section, self.key)
+        msg = "'%s.%s'" % (self.section, self.key) if self.section else \
+            self.key
         if not self.msg:
             msg += " value is invalid (got %r)" % self.value
         else:
@@ -88,7 +91,6 @@ class UnrecognizedKeyError(Error):
     """
 
     def __init__(self, key, value, section=None, msg=None):
-        # TODO: section is not taken into account
         self.key = key
         self.value = value
         self.section = section
@@ -332,7 +334,6 @@ class _Parser:
         """Iterate over all process env vars and return a dict() of
         env vars whose name match they keys defined by conf class.
         """
-        # TODO: support section
         conf_class = _conf_map[None]
         conf_class_names = set(conf_class.__dict__.keys())
         if not self.envvar_case_sensitive:
@@ -425,7 +426,7 @@ class _Parser:
                 if not ok:
                     exc = ValidationError()
             if exc is not None:
-                # exc.section = section
+                exc.section = section
                 exc.key = key
                 exc.value = new_value
                 raise exc
