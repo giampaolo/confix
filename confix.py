@@ -298,7 +298,7 @@ class _Parser:
             _log("conf file not specified")
             if self.file_parser is not None:
                 raise ValueError(
-                    "can't specify 'parser' option and no 'conf_file'")
+                    "can't specify 'file_parser' option and no 'conf_file'")
             else:
                 return {}
 
