@@ -21,10 +21,13 @@ clean:
 	rm -rf *.core
 	rm -rf *.egg-info
 	rm -rf *\$testfile*
+	rm -rf .coverage
 	rm -rf .tox
 	rm -rf build
 	rm -rf dist
 	rm -rf docs/_build
+	rm -rf htmlcov
+
 
 # useful deps which are nice to have while developing / testing
 setup-dev-env:
@@ -40,6 +43,8 @@ setup-dev-env:
 		nose \
 		pep8 \
 		pyyaml \
+		sphinx \
+		sphinx-pypi-upload \
 		toml \
 		unittest2
 
@@ -80,6 +85,12 @@ flake8:
 # upload source tarball on https://pypi.python.org/pypi/pysendfile.
 upload-src: clean
 	$(PYTHON) setup.py sdist upload
+
+# Build and upload doc on https://pythonhosted.org/psutil/.
+# Requires "pip install sphinx-pypi-upload".
+upload-doc:
+	cd docs; make html
+	$(PYTHON) setup.py upload_sphinx --upload-dir=docs/_build/html
 
 # git-tag a new release
 git-tag-release:

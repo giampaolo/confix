@@ -65,12 +65,11 @@ class ValidationError(Error):
         self.value = None
 
     def __str__(self):
-        msg = "'%s.%s'" % (self.section, self.key) if self.section else \
-            self.key
-        if not self.msg:
-            msg += " value is invalid (got %r)" % self.value
-        else:
-            msg += " %s" % self.msg
+        key = "'%s.%s'" % (self.section, self.key) if self.section else \
+            repr(self.key)
+        msg = "%s key with value %r didn't pass validation" % (key, self.value)
+        if self.msg:
+            msg += "; %s" % self.msg
         return msg
 
 
@@ -137,8 +136,10 @@ class TypesMismatchError(Error):
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
         return self.msg or \
-            "type mismatch for key %r (default_value=%r) got %r" % (
-                key, self.default_value, self.new_value)
+            "type mismatch for key %r (default_value=%r, %s) got %r " \
+            "(%s)" % (
+                key, self.default_value, type(self.default_value),
+                self.new_value, type(self.new_value))
 
 
 # --- utils
@@ -176,6 +177,8 @@ def parse_json(file):
 
 
 def parse_envvar(name, value, default_value):
+    if isinstance(default_value, schema):
+        default_value = default_value.default
     if isinstance(default_value, bool):
         if value.lower() in _BOOL_TRUE:
             value = True
@@ -195,8 +198,6 @@ def parse_envvar(name, value, default_value):
          "casted_to=%r" % (name, value, default_value, value))
     return value
 
-
-# TODO
 
 def parse_ini(file):
     config = configparser.ConfigParser()

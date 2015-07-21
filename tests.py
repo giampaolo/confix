@@ -305,7 +305,7 @@ class TestBase(object):
         self.assertEqual(cm.exception.key, 'foo')
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, None)
-        self.assertIn('(got 5)', str(cm.exception))
+        self.assertIn('with value 5', str(cm.exception))
 
     # --- test parse_with_envvars
 
@@ -631,7 +631,8 @@ class TestMisc(unittest.TestCase):
         exc = TypesMismatchError(key="foo", default_value=1, new_value='bar')
         self.assertEqual(
             str(exc),
-            "type mismatch for key 'foo' (default_value=1) got 'bar'")
+            "type mismatch for key 'foo' (default_value=1, %s) got "
+            "'bar' (%s)" % (type(1), type("")))
 
     def test_file_like(self):
         @register()

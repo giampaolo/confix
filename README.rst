@@ -26,8 +26,10 @@ Confix
 Quick links
 -----------
 
-* `Code and bug tracker <https://github.com/giampaolo/confix>`_
-* `PYPI <https://pypi.python.org/pypi/confix>`_
+* `Home page <https://github.com/giampaolo/confix>`__
+* `Blog <http://grodola.blogspot.com/search/label/confix>`__
+* `Forum <https://groups.google.com/forum/#!forum/python-confix>`__
+* `Download <https://pypi.python.org/pypi?:action=display&name=confix#downloads>`__
 
 About
 -----
@@ -35,68 +37,45 @@ About
 A language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then **overwrite only the keys you need** from a static config file
-(be it **YAML, JSON, INI or TOML**) and/or environment variables.
+(be it **YAML, JSON, INI or TOML**) and/or
+`environment variables <http://pythonhosted.org/confix#override-a-key-via-environment-variable>`_.
 This is useful in order to avoid storing sensitive data (e.g. passwords) in
 the source code.
 
-Example using configuration file:
+Example:
+
+python file:
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, parse
+
+    @register()
+    class config:
+        username = 'ftp'
+        password = None     # this will be overridden by the conf file
+
+    parse('config.yaml')    # make replacements to "config" class
+    print(config.username)  # will print "ftp"
+    print(config.password)  # will print "secret" instead of None
 
 config file:
 
 .. code-block:: yaml
 
-    # config.yaml
+    # config.yml
     password: secret
 
-python file:
-
-.. code-block:: python
-
-    # ftp.py
-    from confix import register, parse
-
-    @register()
-    class config:
-        host = 'localhost'
-        port = 2121
-        user = 'ftp'
-        password = None         # this will be overridden later
-
-    if __name__ == '__main__':
-        parse('config.yaml')    # make replacements to "config" class
-        print(config.user)      # will print "ftp"
-        print(config.password)  # will print "secret" instead of None
-
-
-...if you want to also parse environment variables (order of precedence:
-env-vars -> config file -> config class):
-
-python file:
-
-.. code-block:: python
-
-    # ftp.py
-    from confix import register, parse_with_envvars
-
-    @register()
-    class config:
-        host = 'localhost'
-        port = 2121
-        user = 'ftp'
-        password = None         # this will be overridden later
-
-    if __name__ == '__main__':
-        parse_with_envvars()    # make replacements to "config" class
-        print(config.user)      # will print "ftp"
-        print(config.password)  # will print "secret" instead of None
-
-from the shell:
+shell:
 
 .. code-block:: bash
 
-    $ FOO=2 python ftp.py
-    giampaolo
+    $ python main.py
+    ftp
     secret
+
+For more examples see `docs <http://pythonhosted.org/confix>`_.
 
 Main features
 -------------
@@ -121,4 +100,4 @@ Main features
 Status
 ------
 
-Still beta.
+Still beta, especially ini file support.
