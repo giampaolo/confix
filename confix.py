@@ -87,18 +87,20 @@ class UnrecognizedKeyError(Error):
     that is defined in the config file.
     """
 
-    def __init__(self, key, value, msg=None):
+    def __init__(self, key, value, section=None, msg=None):
         # TODO: section is not taken into account
         self.key = key
         self.value = value
+        self.section = section
         self.msg = msg
 
     def __str__(self):
         plural = "es" if _has_multi_conf_classes() else ""
+        key = "%s.%s" % (self.section, self.key) if self.section else self.key
         return self.msg or \
             "config file provides key %r with value %r but key %r is not " \
             "defined in the config class%s" % (
-                self.key, self.value, self.key, plural)
+                key, self.value, self.key, plural)
 
 
 class RequiredKeyError(Error):
@@ -106,14 +108,16 @@ class RequiredKeyError(Error):
     (enforced by a schema()).
     """
 
-    def __init__(self, key, msg=None):
+    def __init__(self, key, section=None, msg=None):
         self.key = key
         self.msg = msg
+        self.section = section
 
     def __str__(self):
+        key = "%s.%s" % (self.section, self.key) if self.section else self.key
         return self.msg or \
             "configuration class requires %r key to be specified via config " \
-            "file or env var" % (self.key)
+            "file or env var" % (key)
 
 
 class TypesMismatchError(Error):
@@ -121,16 +125,18 @@ class TypesMismatchError(Error):
     than the original one defined in the configuration class.
     """
 
-    def __init__(self, key, default_value, new_value, msg=None):
+    def __init__(self, key, default_value, new_value, section=None, msg=None):
         self.key = key
         self.default_value = default_value
         self.new_value = new_value
+        self.section = section
         self.msg = msg
 
     def __str__(self):
+        key = "%s.%s" % (self.section, self.key) if self.section else self.key
         return self.msg or \
             "type mismatch for key %r (default_value=%r) got %r" % (
-                self.key, self.default_value, self.new_value)
+                key, self.default_value, self.new_value)
 
 
 # --- utils
@@ -327,8 +333,8 @@ class _Parser:
         env vars whose name match they keys defined by conf class.
         """
         # TODO: support section
-        conf_class_inst = _conf_map[None]
-        conf_class_names = set(conf_class_inst.__dict__.keys())
+        conf_class = _conf_map[None]
+        conf_class_names = set(conf_class.__dict__.keys())
         if not self.envvar_case_sensitive:
             conf_class_names = set([x.lower() for x in conf_class_names])
 
@@ -338,7 +344,7 @@ class _Parser:
             if not self.envvar_case_sensitive:
                 name = name.lower()
             if name in conf_class_names:
-                default_value = getattr(conf_class_inst, name)
+                default_value = getattr(conf_class, name)
                 value = self.envvar_parser(name, value, default_value)
                 conf[name] = value
         return conf
@@ -356,33 +362,34 @@ class _Parser:
                 # Possibly we may have multiple regeister()ed conf classes.
                 # "new_value" in this case is actually a dict of sub-section
                 # items.
-                conf_class_inst = _conf_map[key]
+                conf_class = _conf_map[key]
                 assert isinstance(new_value, dict), new_value
                 assert new_value, new_value
                 for k, nv in new_value.items():
-                    self.process_pair(k, nv, conf_class_inst)
+                    self.process_pair(k, nv, conf_class, section=k)
             else:
                 # We're not dealing with a section.
                 try:
-                    conf_class_inst = _conf_map[None]
+                    conf_class = _conf_map[None]
                 except KeyError:
-                    raise UnrecognizedKeyError(key, new_value)
-                self.process_pair(key, new_value, conf_class_inst)
+                    raise UnrecognizedKeyError(key, new_value, section=None)
+                self.process_pair(key, new_value, conf_class,
+                                  section=None)
 
         self.run_last_schemas()
 
-    def process_pair(self, key, new_value, conf_class_inst):
+    def process_pair(self, key, new_value, conf_class, section):
         """Given a key / value pair extracted either from the config
         file or env vars process it (validate it) and override the
         config class original key value.
         """
         try:
-            # the default value defined in the conf class
-            default_value = getattr(conf_class_inst, key)
+            # The default value defined in the conf class.
+            default_value = getattr(conf_class, key)
         except AttributeError:
-            # file defines a key which does not exist in the
-            # conf class
-            raise UnrecognizedKeyError(key, new_value)
+            # Conf file defines a key which does not exist in the
+            # conf class.
+            raise UnrecognizedKeyError(key, new_value, section=section)
 
         is_schema = isinstance(default_value, schema)
         # TODO: perhpas "not is_schema" is not necessary
@@ -403,7 +410,8 @@ class _Parser:
                 # between str and unicode.
                 pass
             else:
-                raise TypesMismatchError(key, default_value, new_value)
+                raise TypesMismatchError(key, default_value, new_value,
+                                         section=section)
 
         if is_schema and default_value.validator is not None:
             exc = None
@@ -423,20 +431,20 @@ class _Parser:
                 raise exc
 
         _log("overring key %r (value=%r) to new value %r".format(
-            key, getattr(conf_class_inst, key), new_value))
-        setattr(conf_class_inst, key, new_value)
+            key, getattr(conf_class, key), new_value))
+        setattr(conf_class, key, new_value)
 
     @staticmethod
     def run_last_schemas():
         """Parse the configuration classes in order to collect all schemas
         which were not overwritten by the config file.
         """
-        for section, cflet in _conf_map.items():
-            for key, value in cflet.__dict__.items():
+        for section, conf_class in _conf_map.items():
+            for key, value in conf_class.__dict__.items():
                 if isinstance(value, schema):
                     if value.required:
-                        raise RequiredKeyError(key)
-                    setattr(cflet, key, value.default)
+                        raise RequiredKeyError(key, section=section)
+                    setattr(conf_class, key, value.default)
 
 
 def parse(conf_file=None, file_parser=None, type_check=True):
