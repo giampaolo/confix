@@ -71,6 +71,14 @@ class ValidationError(Error):
         return msg
 
 
+class AlreadyParsedError(Error):
+    """Called when parse() or parse_with_envvars() is called twice."""
+
+    def __str__(self):
+        return 'configuration was already parsed once; you may want to use ' \
+               'discard() and parse() again'
+
+
 # --- exceptions (internal)
 
 
@@ -87,12 +95,14 @@ class UnrecognizedKeyError(Error):
 
     def __str__(self):
         return self.msg or \
-            "config file provides key %r with value %r but key %r is not" \
+            "config file provides key %r with value %r but key %r is not " \
             "defined in the config class" % (self.key, self.value, self.key)
 
 
 class RequiredKeyError(Error):
-    """Raised when the config file didn't specify a required key."""
+    """Raised when the config file didn't specify a required key
+    (enforced by a schema()).
+    """
 
     def __init__(self, key, msg=None):
         self.key = key
@@ -100,8 +110,8 @@ class RequiredKeyError(Error):
 
     def __str__(self):
         return self.msg or \
-            "configuration class requires %r key to be specified in the " \
-            "config file" % (self.key)
+            "configuration class requires %r key to be specified via config " \
+            "file or env var" % (self.key)
 
 
 class TypesMismatchError(Error):
@@ -129,6 +139,7 @@ def _log(s):
 
 
 # --- parsers
+
 
 def parse_yaml(file):
     import yaml
@@ -229,13 +240,9 @@ def register(section=None):
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         return klass
 
-    if section is not None:
-        # TODO
-        raise NotImplementedError("multiple sections not supported yet")
     if section in _conf_map:
         raise ValueError("a conf class was already registered for "
                          "section %r")
-
     return wrapper
 
 
@@ -246,8 +253,7 @@ class _Parser:
                  envvar_parser=None):
         global _parsed
         if _parsed:
-            raise Error('already configured (you may want to use discard() '
-                        'then call parse() again')
+            raise AlreadyParsedError
         self.conf_file = conf_file
         self.file_parser = file_parser
         self.type_check = type_check
@@ -316,22 +322,14 @@ class _Parser:
                     ext = os.path.splitext(file.name)[1]
                     parser = pmap[ext]
                 except KeyError:
-                    raise ValueError("don't know how to parse %r" % file.name)
+                    raise ValueError("don't know how to parse %r (extension "
+                                     "not supported)" % file.name)
             else:
                 parser = self.file_parser
             return parser(file) or {}
 
     def process_conf(self, conf):
-        if not _conf_map:
-            raise Error("no registered conf classes were found")
-        if list(_conf_map.keys()) != [None]:
-            raise NotImplementedError("multiple sections not supported yet")
-
-        # TODO: support section
-        conf_class_inst = _conf_map[None]
-
-        # iterate over file
-        for key, new_value in conf.items():
+        def process_pair(key, new_value, conf_class_inst):
             try:
                 # the default value defined in the conf class
                 default_value = getattr(conf_class_inst, key)
@@ -374,6 +372,29 @@ class _Parser:
             _log("overring key %r (value=%r) to new value %r".format(
                 key, getattr(conf_class_inst, key), new_value))
             setattr(conf_class_inst, key, new_value)
+
+        if not _conf_map:
+            raise Error("no registered conf classes were found")
+        if list(_conf_map.keys()) != [None]:
+            raise NotImplementedError("multiple sections not supported yet")
+
+        # iterate over file / envvar conf
+        for key, new_value in conf.items():
+            # this should never happen
+            assert key is not None, key
+            if key in _conf_map:
+                # We're dealing with a section.
+                # Possibly we may have multiple regeister()ed conf classes.
+                # "new_value" in this case is actually a dict of sub-section
+                # items.
+                conf_class_inst = _conf_map[key]
+                assert isinstance(new_value, dict), new_value
+                assert new_value, new_value
+                for k, nv in conf.items():
+                    process_pair(k, nv, conf_class_inst)
+            else:
+                conf_class_inst = _conf_map[None]
+                process_pair(key, new_value, conf_class_inst)
 
         # parse the configuration classes in order to collect all schemas
         # which were not overwritten by the config file

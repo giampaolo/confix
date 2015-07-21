@@ -14,7 +14,7 @@ import sys
 
 from confix import Error, UnrecognizedKeyError, RequiredKeyError
 from confix import register, parse, parse_with_envvars, discard, schema
-from confix import TypesMismatchError
+from confix import TypesMismatchError, AlreadyParsedError
 from confix import ValidationError
 
 try:
@@ -57,7 +57,6 @@ def unlink(path):
 
 
 class TestBase(object):
-
     """Base class from which mixin classes are derived."""
     TESTFN = None
 
@@ -69,6 +68,8 @@ class TestBase(object):
     def tearDownClass(cls):
         unlink(TESTFN)
 
+    # --- utils
+
     def dict_to_file(self, dct):
         raise NotImplementedError('must be implemented in subclass')
 
@@ -77,37 +78,47 @@ class TestBase(object):
         with open(fname or cls.TESTFN, 'w') as f:
             f.write(content)
 
+    # --- base tests
+
     def test_empty_conf_file(self):
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.write_to_file("   ")
         parse(self.TESTFN)
         self.assertEqual(config.foo, 1)
         self.assertEqual(config.bar, 2)
 
     def test_no_conf_file(self):
+        # parse() is supposed to parse also if no conf file is passed
         @register()
         class config:
             foo = 1
             bar = schema(10)
-        self.write_to_file("   ")
+
         parse()
         self.assertEqual(config.foo, 1)
         self.assertEqual(config.bar, 10)
 
-    def test_unknown_format(self):
+    def test_conf_file_w_unknown_ext(self):
+        # Conf file with unsupported extension.
         with open(TESTFN, 'w') as f:
             f.write('foo')
         self.addCleanup(unlink, TESTFN)
-        self.assertRaises(ValueError, parse, TESTFN)
+        with self.assertRaises(ValueError) as cm:
+            parse(TESTFN)
+        self.assertIn("don't know how to parse", str(cm.exception))
+        self.assertIn("extension not supported", str(cm.exception))
 
-    def test_conf_file_overrides_one(self):
+    def test_conf_file_overrides_key(self):
+        # Conf file overrides one key, other one should be default.
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -115,11 +126,13 @@ class TestBase(object):
         self.assertEqual(config.foo, 5)
         self.assertEqual(config.bar, 2)
 
-    def test_conf_file_overrides_both(self):
+    def test_conf_file_overrides_all_keys(self):
+        # Conf file overrides both keys.
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.dict_to_file(
             dict(foo=5, bar=6)
         )
@@ -127,11 +140,13 @@ class TestBase(object):
         self.assertEqual(config.foo, 5)
         self.assertEqual(config.bar, 6)
 
-    def test_invalid_field(self):
+    def test_unrecognized_key(self):
+        # Conf file has a key which is not specified in the config class.
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.dict_to_file(
             dict(foo=5, apple=6)
         )
@@ -141,14 +156,16 @@ class TestBase(object):
         self.assertEqual(cm.exception.key, 'apple')
 
     def test_types_mismatch(self):
+        # Conf file provides a key with a value whose type is != than
+        # conf class default type.
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.dict_to_file(
             dict(foo=5, bar='6')
         )
-
         with self.assertRaises(TypesMismatchError) as cm:
             parse(self.TESTFN)
         # self.assertEqual(cm.exception.section, 'name')
@@ -156,35 +173,50 @@ class TestBase(object):
         self.assertEqual(cm.exception.default_value, 2)
         self.assertEqual(cm.exception.new_value, '6')
 
+        # ...Unless we explicitly tell parse() to ignore type mismatch.
+        parse(self.TESTFN, type_check=False)
+        self.assertEqual(config.foo, 5)
+        self.assertEqual(config.bar, '6')
+
     # def test_invalid_yaml_file(self):
     #     self.dict_to_file('?!?')
     #     with self.assertRaises(Error) as cm:
     #         parse(self.TESTFN)
 
-    def test_already_configured(self):
+    def test_parse_called_twice(self):
         @register()
         class config:
             foo = 1
             bar = 2
+
         self.dict_to_file(
             dict(foo=5, bar=6)
         )
         parse(self.TESTFN)
-        self.assertRaises(Error, parse, self.TESTFN)
+        self.assertRaises(AlreadyParsedError, parse)
+        self.assertRaises(AlreadyParsedError, parse_with_envvars)
+
+    # --- test schemas
 
     def test_schema_base(self):
+        # A schema with no constraints is supposed to be converted into
+        # its default value after parse().
         @register()
         class config:
             foo = schema(10)
+
         self.dict_to_file({})
         parse(self.TESTFN)
         self.assertEqual(config.foo, 10)
 
-    def test_schema_base_required(self):
+    def test_schema_required(self):
+        # If a schema is required and it's not specified in the config
+        # file expect an error.
         @register()
         class config:
             foo = schema(10, required=True)
             bar = 2
+
         self.dict_to_file(
             dict(bar=2)
         )
@@ -193,10 +225,13 @@ class TestBase(object):
         # self.assertEqual(cm.exception.section, 'name')  # TODO
         self.assertEqual(cm.exception.key, 'foo')
 
-    def test_schema_base_overwritten(self):
+    def test_schema_required_provided(self):
+        # If a schema is required and it's provided in the conf file
+        # eveything is cool.
         @register()
         class config:
             foo = schema(10, required=True)
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -209,10 +244,13 @@ class TestBase(object):
         # not callable validator
         self.assertRaises(ValueError, schema, 10, False, 'foo')
 
+    # --- test validators
+
     def test_validator_ok(self):
         @register()
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, int))
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -222,6 +260,7 @@ class TestBase(object):
         @register()
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, str))
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -241,6 +280,7 @@ class TestBase(object):
         self.dict_to_file(
             dict(foo=5)
         )
+
         with self.assertRaises(ValidationError) as cm:
             parse(self.TESTFN)
         # self.assertEqual(cm.exception.section, 'name')  # TODO
@@ -258,6 +298,7 @@ class TestBase(object):
         self.dict_to_file(
             dict(foo=5)
         )
+
         with self.assertRaises(ValidationError) as cm:
             parse(self.TESTFN)
         # self.assertEqual(cm.exception.section, 'name')  # TODO
@@ -265,17 +306,6 @@ class TestBase(object):
         self.assertEqual(cm.exception.value, 5)
         self.assertEqual(cm.exception.msg, None)
         self.assertIn('(got 5)', str(cm.exception))
-
-    def test_register_invalid_type(self):
-        def doit():
-            @register()
-            def config():
-                pass
-
-        self.dict_to_file(
-            dict(foo=5)
-        )
-        self.assertRaises(TypeError, doit, self.TESTFN)
 
     # --- parse_with_envvars
 
@@ -285,6 +315,7 @@ class TestBase(object):
             foo = 1
             bar = 2
             apple = 3
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -300,6 +331,7 @@ class TestBase(object):
             foo = 1
             bar = 2
             apple = 3
+
         self.dict_to_file(
             dict(foo=5)
         )
@@ -316,6 +348,7 @@ class TestBase(object):
             some_float = 1.0
             some_true_bool = True
             some_false_bool = True
+
         os.environ['SOME_INT'] = '2'
         os.environ['SOME_FLOAT'] = '2.0'
         os.environ['SOME_TRUE_BOOL'] = 'false'
@@ -331,6 +364,7 @@ class TestBase(object):
         class config:
             some_int = 1
             some_float = 0.1
+
         os.environ['SOME_INT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
@@ -416,6 +450,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #         class config:
 #             foo = 1
 #             bar = 2
+
 #         self.write_to_file(textwrap.dedent("""
 #             [name]
 #             foo = 9
@@ -429,6 +464,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #         class config:
 #             foo = 1
 #             bar = 2
+
 #         self.write_to_file(textwrap.dedent("""
 #             [name]
 #             foo = '9'
@@ -440,6 +476,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #         class config:
 #             foo = 1.1
 #             bar = 2
+
 #         self.write_to_file(textwrap.dedent("""
 #             [name]
 #             foo = 1.3
@@ -452,6 +489,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #         class config:
 #             foo = None
 #             bar = 2
+
 #         true_values = ("1", "yes", "true", "on")
 #         for value in true_values:
 #             self.write_to_file(textwrap.dedent("""
@@ -467,6 +505,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
 #         class config:
 #             foo = None
 #             bar = 2
+
 #         true_values = ("0", "no", "false", "off")
 #         for value in true_values:
 #             self.write_to_file(textwrap.dedent("""
@@ -498,10 +537,14 @@ class TestMisc(unittest.TestCase):
             unlink(TESTFN)
 
     def test_decorate_fun(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError) as cm:
             @register()
             def foo():
                 pass
+
+        self.assertIn(
+            'register decorator is supposed to be used against a class',
+            str(cm.exception))
 
     def test_translators_not_callable(self):
         self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
@@ -518,12 +561,12 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(
             str(exc),
             "config file provides key 'foo' with value 'bar' but key 'foo' "
-            "is notdefined in the config class")
+            "is not defined in the config class")
         exc = RequiredKeyError(key="foo")
         self.assertEqual(
             str(exc),
-            "configuration class requires 'foo' key to be specified in the "
-            "config file")
+            "configuration class requires 'foo' key to be specified via "
+            "config file or env var")
         exc = TypesMismatchError(key="foo", default_value=1, new_value='bar')
         self.assertEqual(
             str(exc),
@@ -535,10 +578,10 @@ class TestMisc(unittest.TestCase):
             foo = 1
 
         file = io.StringIO()
-        with self.assertRaises(Error) as exc:
+        with self.assertRaises(Error) as cm:
             parse(file)
         self.assertEqual(
-            str(exc.exception),
+            str(cm.exception),
             "can't determine format from a file object with no 'name' "
             "attribute")
 
@@ -546,9 +589,9 @@ class TestMisc(unittest.TestCase):
         parse(file, file_parser=lambda x: {})
 
     def test_envvar_parser_not_callable(self):
-        with self.assertRaises(TypeError) as exc:
+        with self.assertRaises(TypeError) as cm:
             parse_with_envvars(envvar_parser=1)
-        self.assertIn("not a callable", str(exc.exception))
+        self.assertIn("not a callable", str(cm.exception))
 
 
 def main():
