@@ -13,9 +13,9 @@ import textwrap
 #     import ConfigParser as configparser
 
 from confix import Error, UnrecognizedKeyError, RequiredKeyError
-from confix import istrue, isin, isnotin, isemail
+from confix import istrue, isin, isnotin, isemail, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
-from confix import TypesMismatchError, AlreadyParsedError
+from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
 from confix import ValidationError
 
 try:
@@ -724,6 +724,48 @@ class TestMisc(unittest.TestCase):
                 foo = 1
 
         self.assertIn("already registered", str(cm.exception))
+
+
+class TestGetConf(unittest.TestCase):
+
+    def setUp(self):
+        discard()
+    tearDown = setUp
+
+    def test_root_only(self):
+        @register()
+        class root_conf:
+            root_value = 1
+
+        self.assertRaises(NotParsedError, get_parsed_conf)
+        parse()
+        self.assertEqual(get_parsed_conf(), {'root_value': 1})
+
+    def test_root_plus_sub(self):
+        @register()
+        class root_conf:
+            root_value = 1
+
+        @register('sub')
+        class sub_conf:
+            sub_value = 1
+
+        parse()
+        self.assertEqual(
+            get_parsed_conf(), {'root_value': 1, 'sub': {'sub_value': 1}})
+
+    def test_sub_plus_root(self):
+        @register('sub')
+        class sub_conf:
+            sub_value = 1
+
+        @register()
+        class root_conf:
+            root_value = 1
+
+        parse()
+        self.assertEqual(
+            get_parsed_conf(), {'root_value': 1, 'sub': {'sub_value': 1}})
 
 
 def main():

@@ -5,10 +5,13 @@ A language-agnostic configuration parser.
 Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
-# TODO / IDEAS:
+# TODO / IDEAS / OPEN QUESTIONS:
 # - have @register modify the conf class in order to provide / attach:
 #   - a nice __repr__
 #   - a nice __dir__
+# - should parse() return get_parsed_conf()?
+# - when using multiple conf classes raise exception if a sub section
+#   overrides a root key
 
 import collections
 import functools
@@ -84,6 +87,15 @@ class AlreadyParsedError(Error):
     def __str__(self):
         return 'configuration was already parsed once; you may want to use ' \
                'discard() and parse() again'
+
+
+class NotParsedError(Error):
+    """Called when get_parsed_conf() is called but parse() has not been
+    called yet.
+    """
+
+    def __str__(self):
+        return 'configuration is not parsed yet; use parse() first'
 
 
 # =============================================================================
@@ -325,6 +337,31 @@ def register(section=None):
         raise ValueError("a conf class was already registered for "
                          "section %r" % section)
     return wrapper
+
+
+def get_parsed_conf():
+    """Return the whole parsed configuration as a dict.
+    If parse() wasn't called yet it will raise NotParsedError.
+    """
+    def conf_class_to_dict(conf_class):
+        ret = {}
+        for k, v in inspect.getmembers(conf_class):
+            if not k.startswith('_') and not inspect.isroutine(v):
+                ret[k] = v
+        return ret
+
+    if not _parsed:
+        raise NotParsedError
+    ret = {}
+    cmap = _conf_map.copy()
+    # root section
+    if None in cmap:
+        conf_class = cmap.pop(None)
+        ret = conf_class_to_dict(conf_class)
+    # other sections
+    for section, conf_class in cmap.items():
+        ret[section] = conf_class_to_dict(conf_class)
+    return ret
 
 
 class _Parser:

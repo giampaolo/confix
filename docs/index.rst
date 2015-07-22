@@ -2,6 +2,11 @@
    :synopsis: confix module
 .. moduleauthor:: Giampaolo Rodola' <grodola@gmail.com>
 
+.. warning::
+
+   This documentation refers to latest GIT version of confix which has not been
+   released yet.
+
 confix documentation
 ====================
 
@@ -71,7 +76,6 @@ API reference
     the environment variables will take precedence as in:
     ``environment variable -> config file -> config class default value``.
 
-
 .. function:: schema(default=_DEFAULT, required=False, validator=None)
 
     A schema can be used to validate configuration key's values or state they
@@ -81,6 +85,9 @@ API reference
     env var) to specify that key.
     *validator* is a function which is called for validation; evaluation
     fails if it returns ``False`` or raise :class:`ValidationError`.
+
+.. function:: get_parsed_conf()
+
 
 **Validators:**
 
