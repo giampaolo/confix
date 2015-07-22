@@ -13,6 +13,7 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # - when using multiple conf classes raise exception if a sub section
 #   overrides a root key
 # - add 'transformer' callable to schema
+# - schema: figure out what do in case no default value is specified
 
 import collections
 import functools

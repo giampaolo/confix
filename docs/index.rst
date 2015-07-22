@@ -60,8 +60,10 @@ API reference
     *default* is the default key value.
     If *required* is ``True`` it is mandatory for the config file (or the
     env var) to specify that key.
-    *validator* is a function which is called for validation; evaluation
-    fails if it returns ``False`` or raise :class:`ValidationError`.
+    *validator* is a function or a list of functions which will be called for
+    validating the overridden value.
+    A validator function will fail if it returns ``False`` or raise
+    :class:`ValidationError`.
 
 .. function:: confix.parse(conf_file=None, file_parser=None, type_check=True)
 
