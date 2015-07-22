@@ -49,7 +49,7 @@ class Error(Exception):
 
 
 class ValidationError(Error):
-    """Raised when validation through required(validator=callable)
+    """Raised when validation through schema(validator=callable)
     doesn't pass (callable return False).
 
     This can be used within your validator in order to throw custom
@@ -449,8 +449,8 @@ class _Parser:
 
 
 def parse(conf_file=None, file_parser=None, type_check=True):
-    """Parse a configuration file in order to overwrite the previously
-    registered configuration classes.
+    """Parse configuration class(es) replacing values if a
+    configuration file is provided.
 
     Params:
 

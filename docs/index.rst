@@ -14,7 +14,7 @@ Quick links
 * `Download <https://pypi.python.org/pypi?:action=display&name=confix#downloads>`__
 
 About
------
+=====
 
 Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
@@ -23,15 +23,70 @@ YAML, JSON, INI or TOML) and/or via environment variables.
 This is useful in order to avoid storing sensitive data (e.g. passwords) in the
 source code.
 
-confix is a relatively small library so this paper will try describe how to use
-it mainly by using examples.
-All the examples shown in this guide use YAML.
+API reference
+=============
+
+.. class:: ValidationError(msg)
+
+    Raised when a :func:`confix.schema()` validation fails.
+    You can define a custom validator and have it raise this exception instead
+    of returning False in order to provide a custom error message.
+
+.. function:: confix.register(section=None)
+
+    Register a configuration class which will be parsed later. If *section*
+    is ``None`` it is assumed the configuration file will not be split in
+    sub-sections otherwise *section* is the name of a specific section in the
+    config file.
+
+.. function:: confix.parse(conf_file=None, file_parser=None, type_check=True)
+
+    Parse configuration class(es) replacing values if a configuration file
+    is provided.
+    *conf_file* is a path to a configuration file or an existing
+    file-like object. If this is ``None`` configuration class will be parsed
+    anyway in order to validate its :func:`confix.schema()` s.
+    *file_parser* is a callable parsing the configuration file and
+    converting it to a dict.  If ``None`` a default parser will be
+    picked up depending on the file extension. You may want to override this
+    either to support new file extensions or types.
+    If *type_check* is `True` `TypesMismatchError` will be raised in case an
+    an option specified in the configuration file has a different type than the
+    one defined in the configuration class.
+
+.. function:: confix.parse_with_envvars(conf_file=None, file_parser=None, type_check=True, case_sensitive=False, envvar_parser=None)
+
+    Same as :func:`confix.parse()` but also takes environment variables into
+    account.
+    If an environment variable name matches a key of the config class that
+    will replaced with the environment variable value which will be converted
+    by *envvar_parser* function first.
+    If *case_sensitive* is ``False`` env var ``"FOO"`` and ``"foo"`` will be
+    the treated the same and will override config class' key ``"foo"``.
+    *envvar_parser* is the callable which converts the environment variable
+    value (which is always a string) based on the default value type defined
+    in the config class (e.g. if ``config.foo`` is a float the environment
+    variable value will be casted to a float.
+    If *conf_file* is specified also a configuration file will be parsed but
+    the environment variables will take precedence as in:
+    ``environment variable -> config file -> config class default value``.
+
+
+.. function:: schema(default=_DEFAULT, required=False, validator=None)
+
+    A schema can be used to validate configuration key's values or state they
+    are mandatory.
+    *default* is the default key value.
+    If *required* is ``True`` it is mandatory for the config file (or the
+    env var) to specify that key.
+    *validator* is a function which is called for validation; evaluation
+    fails if it returns ``False`` or raise :class:`ValidationError`.
 
 Usage by examples
 =================
 
-Override a key via conf file
-----------------------------
+Override a key via configuration file
+-------------------------------------
 
 python file:
 
@@ -100,12 +155,12 @@ shell:
 Things to note:
  - env vars are case insensitive (to change this behavior you can use
    ``parse_with_envvars(case_sensitive=True))``.
- - we could have parsed the conf file as well with
+ - parse_with_envvars
    ``parse_with_envvars('config.yaml', case_sensitive=True))``.
  - env vars take precedence over config file though.
 
-Errors - conf definition
-------------------------
+Errors: configuration definition
+--------------------------------
 
 One of the key features is that the config class is a definition of all your
 app configuration. If the conf file declares a key which is not defined in the
@@ -149,8 +204,8 @@ shell:
     confix.UnrecognizedKeyError: config file provides key 'host' with value 'localhost' but key 'host' is not defined in the config class
 
 
-Errors - types check
---------------------
+Errors: types checking
+----------------------
 
 Each key in the config class (may) have a default value. By default confix will
 raise an exception if the value overwritten by the config file (or env var) has
@@ -201,7 +256,7 @@ shell:
 Required arguments
 ------------------
 
-You can force certain arguments to be required, meaning they **have** to be
+You can force certain arguments to be required, meaning they *have* to be
 specified via conf file or environment variable.
 
 python file:
@@ -368,7 +423,6 @@ shell:
     ftp-custom
     80
     http-custom
-
 
 Things to note:
  - if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
