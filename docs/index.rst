@@ -82,6 +82,27 @@ API reference
     *validator* is a function which is called for validation; evaluation
     fails if it returns ``False`` or raise :class:`ValidationError`.
 
+**Validators:**
+
+Validators are simple utility functions which can be used with
+:func:`confix.schema()` s.
+
+.. function:: istrue(value)
+
+    Assert value evaluates to ``True``.
+
+.. function:: isin(value, seq)
+
+    Assert value is in a sequence.
+
+.. function:: isnotin(value, seq)
+
+    Assert value is not in a sequence.
+
+.. function:: isemail(value)
+
+    Assert value is a valid email.
+
 Usage by examples
 =================
 

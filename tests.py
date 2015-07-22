@@ -13,6 +13,7 @@ import textwrap
 #     import ConfigParser as configparser
 
 from confix import Error, UnrecognizedKeyError, RequiredKeyError
+from confix import istrue, isin, isnotin, isemail
 from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError
 from confix import ValidationError
@@ -585,6 +586,54 @@ class TestIni(unittest.TestCase):
             parse(self.TESTFN)
             self.assertEqual(config.foo, False)
             discard()
+
+
+# ===================================================================
+# test validators
+# ===================================================================
+
+
+class TestValidators(unittest.TestCase):
+
+    def test_istrue(self):
+        assert istrue('foo')
+        self.assertRaises(ValidationError, istrue, '')
+
+    def test_isin(self):
+        self.assertRaises(TypeError, isin, 1)
+        fun = isin(('1', '2'))
+        assert fun('1')
+        assert fun('2')
+        self.assertRaises(ValidationError, fun, '3')
+        self.assertRaises(ValueError, isin, [])
+
+    def test_isnotin(self):
+        self.assertRaises(TypeError, isin, 1)
+        fun = isnotin(('1', '2'))
+        assert fun('3')
+        assert fun('4')
+        self.assertRaises(ValidationError, fun, '2')
+        self.assertRaises(ValueError, isin, [])
+
+    def test_isemail(self):
+        assert isemail("foo@bar.com")
+        assert isemail("foo@gmail.bar.com")
+        self.assertRaises(ValidationError, isemail, "@bar.com")
+        self.assertRaises(ValidationError, isemail, "foo@bar")
+        self.assertRaises(ValidationError, isemail, "foo@bar.")
+        assert isemail("email@domain.com")
+        assert isemail("\"email\"@domain.com")
+        assert isemail("firstname.lastname@domain.com")
+        assert isemail("email@subdomain.domain.com")
+        assert isemail("firstname+lastname@domain.com")
+        assert isemail("email@123.123.123.123")
+        assert isemail("email@[123.123.123.123]")
+        assert isemail("1234567890@domain.com")
+        assert isemail("email@domain-one.com")
+        assert isemail("_______@domain.com")
+        assert isemail("email@domain.name")
+        assert isemail("email@domain.co.jp")
+        assert isemail("firstname-lastname@domain.com")
 
 
 # ===================================================================

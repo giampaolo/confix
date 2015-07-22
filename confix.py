@@ -11,10 +11,12 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 #   - a nice __dir__
 
 import collections
+import functools
 import inspect
 import json
 import logging
 import os
+import re
 import sys
 
 try:
@@ -31,6 +33,7 @@ __license__ = 'MIT'
 _PY3 = sys.version_info >= (3, )
 _BOOL_TRUE = set(('y', 'yes', 't', 'true', 'on', '1'))
 _BOOL_FALSE = set(('n', 'no', 'f', 'false', 'off', '0'))
+_EMAIL_RE = re.compile("^.+@.+\..+$")
 
 if _PY3:
     basestring = str
@@ -39,7 +42,10 @@ if _PY3:
 logger = logging.getLogger(__name__)
 
 
-# --- exceptions (public)
+# =============================================================================
+# exceptions (public)
+# =============================================================================
+
 
 class Error(Exception):
     """Base exception class from which derive all others."""
@@ -80,7 +86,9 @@ class AlreadyParsedError(Error):
                'discard() and parse() again'
 
 
-# --- exceptions (internal)
+# =============================================================================
+# exceptions (internal)
+# =============================================================================
 
 
 class UnrecognizedKeyError(Error):
@@ -141,7 +149,9 @@ class TypesMismatchError(Error):
                 self.new_value, type(self.new_value))
 
 
-# --- utils
+# =============================================================================
+# internal utils
+# =============================================================================
 
 
 def _log(s):
@@ -153,7 +163,63 @@ def _has_multi_conf_classes():
     return len(_conf_map) > 1
 
 
-# --- parsers
+# =============================================================================
+# validators
+# =============================================================================
+
+
+def istrue(value):
+    """Assert value evaluates to True."""
+    try:
+        assert bool(value)
+    except AssertionError:
+        raise ValidationError("bool(%r) evaluates to False" % value)
+    else:
+        return True
+
+
+def isin(seq):
+    """Assert value is in a sequence."""
+    def wrapper(seq, value):
+        if value not in seq:
+            raise ValidationError(
+                "expected a value amongst %r, got %r".format(seq, value))
+        return True
+
+    if not isinstance(seq, collections.Iterable):
+        raise TypeError("{!r} is not iterable".format(seq))
+    if not seq:
+        raise ValueError("{!r} sequence can't be empty".format(seq))
+    return functools.partial(wrapper, seq)
+
+
+def isnotin(seq):
+    """Assert value is not in a sequence."""
+    def wrapper(seq, value):
+        if value in seq:
+            raise ValidationError(
+                "expected a value not in %r sequence, got %r" % (seq, value))
+        return True
+
+    if not isinstance(seq, collections.Iterable):
+        raise TypeError("{!r} is not iterable".format(seq))
+    if not seq:
+        raise ValueError("{!r} sequence can't be empty".format(seq))
+    return functools.partial(wrapper, seq)
+
+
+def isemail(value):
+    """Assert value is a valid email."""
+    if not isinstance(value, basestring):
+        raise ValidationError("expected a string, got %r" % value)
+    if re.match(_EMAIL_RE, value) is None:
+        raise ValidationError("not a valid email")
+    return True
+
+
+# =============================================================================
+# parsers
+# =============================================================================
 
 
 def parse_yaml(file):
@@ -226,7 +292,9 @@ def parse_ini(file):
     return ret
 
 
-# --- public API
+# =============================================================================
+# rest of public API
+# =============================================================================
 
 
 _conf_map = {}
