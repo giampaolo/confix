@@ -31,11 +31,20 @@ source code.
 API reference
 =============
 
+**Exceptions**
+
 .. class:: ValidationError(msg)
 
     Raised when a :func:`confix.schema()` validation fails.
     You can define a custom validator and have it raise this exception instead
     of returning False in order to provide a custom error message.
+
+.. class:: NotParsedError(msg)
+
+    Called when :func:`get_parsed_conf()` is called but :func:`confix.parse()`
+    has not been called yet.
+
+**Functions**
 
 .. function:: confix.register(section=None)
 
@@ -43,6 +52,16 @@ API reference
     is ``None`` it is assumed the configuration file will not be split in
     sub-sections otherwise *section* is the name of a specific section in the
     config file.
+
+.. function:: schema(default=_DEFAULT, required=False, validator=None)
+
+    A schema can be used to validate configuration key's values or state they
+    are mandatory.
+    *default* is the default key value.
+    If *required* is ``True`` it is mandatory for the config file (or the
+    env var) to specify that key.
+    *validator* is a function which is called for validation; evaluation
+    fails if it returns ``False`` or raise :class:`ValidationError`.
 
 .. function:: confix.parse(conf_file=None, file_parser=None, type_check=True)
 
@@ -76,20 +95,13 @@ API reference
     the environment variables will take precedence as in:
     ``environment variable -> config file -> config class default value``.
 
-.. function:: schema(default=_DEFAULT, required=False, validator=None)
-
-    A schema can be used to validate configuration key's values or state they
-    are mandatory.
-    *default* is the default key value.
-    If *required* is ``True`` it is mandatory for the config file (or the
-    env var) to specify that key.
-    *validator* is a function which is called for validation; evaluation
-    fails if it returns ``False`` or raise :class:`ValidationError`.
-
 .. function:: get_parsed_conf()
 
+    Return the whole parsed configuration as a dict.
+    If :func:`confix.parse()` has not been called yet raise
+    :class:`confix.NotParsedError`.
 
-**Validators:**
+**Validators**
 
 Validators are simple utility functions which can be used with
 :func:`confix.schema()` s.
