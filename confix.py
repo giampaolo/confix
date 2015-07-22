@@ -31,8 +31,8 @@ __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 
 _PY3 = sys.version_info >= (3, )
-_BOOL_TRUE = set(('y', 'yes', 't', 'true', 'on', '1'))
-_BOOL_FALSE = set(('n', 'no', 'f', 'false', 'off', '0'))
+_BOOL_TRUE = set(("1", "yes", "true", "on"))
+_BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")
 
 if _PY3:
@@ -183,13 +183,13 @@ def isin(seq):
     def wrapper(seq, value):
         if value not in seq:
             raise ValidationError(
-                "expected a value amongst %r, got %r".format(seq, value))
+                "expected a value amongst %r, got %r" % (seq, value))
         return True
 
     if not isinstance(seq, collections.Iterable):
-        raise TypeError("{!r} is not iterable".format(seq))
+        raise TypeError("%r is not iterable" % (seq))
     if not seq:
-        raise ValueError("{!r} sequence can't be empty".format(seq))
+        raise ValueError("%r sequence can't be empty" % (seq))
     return functools.partial(wrapper, seq)
 
 
@@ -202,9 +202,9 @@ def isnotin(seq):
         return True
 
     if not isinstance(seq, collections.Iterable):
-        raise TypeError("{!r} is not iterable".format(seq))
+        raise TypeError("%r is not iterable".format(seq))
     if not seq:
-        raise ValueError("{!r} sequence can't be empty".format(seq))
+        raise ValueError("%r sequence can't be empty".format(seq))
     return functools.partial(wrapper, seq)
 
 
@@ -268,17 +268,15 @@ def parse_ini(file):
     config = configparser.ConfigParser()
     config.read(file.name)
     ret = {}
-    bool_true = set(("1", "yes", "true", "on"))
-    bool_false = set(("0", "no", "false", "off"))
     for section, values in config._sections.items():
         ret[section] = {}
         for key, value in values.items():
             value_stripped = value.strip()
             if value.isdigit():
                 value = int(value)
-            elif value_stripped in bool_true:
+            elif value_stripped in _BOOL_TRUE:
                 value = True
-            elif value_stripped in bool_false:
+            elif value_stripped in _BOOL_FALSE:
                 value = False
             else:
                 # guard against float('inf') which returns 'infinite'
