@@ -245,6 +245,37 @@ class TestBase(object):
         # not callable validator
         self.assertRaises(ValueError, schema, 10, False, 'foo')
 
+    def test_schemas_w_multi_validators(self):
+        def fun1(x):
+            flags.append(1)
+            return True
+
+        def fun2(x):
+            flags.append(2)
+            return True
+
+        def fun3(x):
+            flags.append(3)
+            return True
+
+        def fun4(x):
+            flags.append(4)
+            return True
+
+        @register()
+        class config:
+            overridden = schema(10, validator=[fun1, fun2])
+            not_overridden = schema(10, validator=[fun3, fun4])
+
+        flags = []
+        self.dict_to_file(
+            dict(overridden=5)
+        )
+        parse(self.TESTFN)
+        self.assertEqual(sorted(flags), [1, 2, 3, 4])
+        self.assertEqual(config.overridden, 5)
+        self.assertEqual(config.not_overridden, 10)
+
     # --- test validators
 
     def test_validator_ok(self):

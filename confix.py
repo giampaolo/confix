@@ -12,6 +12,7 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # - should parse() return get_parsed_conf()?
 # - when using multiple conf classes raise exception if a sub section
 #   overrides a root key
+# - add 'transformer' callable to schema
 
 import collections
 import functools
@@ -318,8 +319,14 @@ class schema(collections.namedtuple('field',
     def __new__(cls, default=_DEFAULT, required=False, validator=None):
         if not required and default is _DEFAULT:
             raise TypeError("specify a default value or set required=True")
-        if validator is not None and not callable(validator):
-            raise ValueError("%r is not callable" % validator)
+        if validator is not None:
+            if not isinstance(validator, collections.Iterable):
+                if not callable(validator):
+                    raise ValueError("%r is not callable" % validator)
+            else:
+                for v in validator:
+                    if not callable(v):
+                        raise ValueError("%r is not callable" % v)
         return super(schema, cls).__new__(cls, default, required, validator)
 
 
@@ -518,11 +525,24 @@ class _Parser:
                                          section=section)
 
         if is_schema and default_value.validator is not None:
+            schema_ = default_value
+            self.run_validators(schema_, section, key, new_value)
+
+        _log("overring key %r (value=%r) to new value %r".format(
+            key, getattr(conf_class, key), new_value))
+        setattr(conf_class, key, new_value)
+
+    @staticmethod
+    def run_validators(schema_, section, key, new_value):
+        validators = schema_.validator
+        if not isinstance(validators, collections.Iterable):
+            validators = [validators]
+        for validator in validators:
             exc = None
             _log("running validator %r for key %r with value "
-                 "%r".format(default_value.validator, key, new_value))
+                 "%r".format(validator, key, new_value))
             try:
-                ok = default_value.validator(new_value)
+                ok = validator(new_value)
             except ValidationError as err:
                 exc = ValidationError(err.msg)
             else:
@@ -534,10 +554,6 @@ class _Parser:
                 exc.value = new_value
                 raise exc
 
-        _log("overring key %r (value=%r) to new value %r".format(
-            key, getattr(conf_class, key), new_value))
-        setattr(conf_class, key, new_value)
-
     @staticmethod
     def run_last_schemas():
         """Parse the configuration classes in order to collect all schemas
@@ -546,8 +562,11 @@ class _Parser:
         for section, conf_class in _conf_map.items():
             for key, value in conf_class.__dict__.items():
                 if isinstance(value, schema):
-                    if value.required:
+                    schema_ = value
+                    if schema_.required:
                         raise RequiredKeyError(key, section=section)
+                    if schema_.validator is not None:
+                        _Parser.run_validators(schema_, section, key, value)
                     setattr(conf_class, key, value.default)
 
 
