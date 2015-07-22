@@ -359,6 +359,15 @@ class TestBase(object):
         self.assertEqual(config.some_true_bool, False)
         self.assertEqual(config.some_false_bool, True)
 
+    def test_envvars_convert_type_w_schema(self):
+        @register()
+        class config:
+            some_int = schema(1)
+
+        os.environ['SOME_INT'] = '2'
+        parse_with_envvars()
+        self.assertEqual(config.some_int, 2)
+
     def test_envvars_type_mismatch(self):
         @register()
         class config:
@@ -654,6 +663,18 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             parse_with_envvars(envvar_parser=1)
         self.assertIn("not a callable", str(cm.exception))
+
+    def test_register_twice(self):
+        @register()
+        class config:
+            foo = 1
+
+        with self.assertRaises(ValueError) as cm:
+            @register()
+            class config_2:
+                foo = 1
+
+        self.assertIn("already registered", str(cm.exception))
 
 
 def main():
