@@ -431,14 +431,14 @@ def get_parsed_conf():
     with _lock_ctx():
         if not _parsed:
             raise NotParsedError
-        cmap = _conf_map.copy()
+        conf_map = _conf_map.copy()
     ret = {}
     # root section
-    if None in cmap:
-        conf_class = cmap.pop(None)
+    if None in conf_map:
+        conf_class = conf_map.pop(None)
         ret = dict(conf_class)
     # other sections
-    for section, conf_class in cmap.items():
+    for section, conf_class in conf_map.items():
         ret[section] = dict(conf_class)
     return ret
 
