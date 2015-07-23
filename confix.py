@@ -198,7 +198,8 @@ def _log(s):
 
 def _has_multi_conf_classes():
     """Return True if more than one config class has been register()ed."""
-    return len(_conf_map) > 1
+    with _lock_ctx():
+        return len(_conf_map) > 1
 
 
 @contextlib.contextmanager
@@ -420,8 +421,9 @@ def register(section=None):
             _conf_map[section] = klass
         return klass
 
-    if section in _conf_map:
-        raise AlreadyRegisteredError(section)
+    with _lock_ctx():
+        if section in _conf_map:
+            raise AlreadyRegisteredError(section)
     return wrapper
 
 
@@ -517,7 +519,9 @@ class _Parser:
         env vars whose name match they keys defined by conf class.
         """
         conf = {}
-        for section, conf_class in _conf_map.items():
+        with _lock_ctx():
+            conf_map = _conf_map.copy()
+        for section, conf_class in conf_map.items():
             conf_class_names = set(conf_class.__dict__.keys())
             if not self.envvar_case_sensitive:
                 conf_class_names = set([x.lower() for x in conf_class_names])
@@ -533,19 +537,22 @@ class _Parser:
         return conf
 
     def process_conf(self, conf):
-        if not _conf_map:
+        with _lock_ctx():
+            conf_map = _conf_map.copy()
+
+        if not conf_map:
             raise Error("no registered conf classes were found")
 
         # iterate over file / envvar conf
         for key, new_value in conf.items():
             # this should never happen
             assert key is not None, key
-            if key in _conf_map:
+            if key in conf_map:
                 # We're dealing with a section.
                 # Possibly we may have multiple regeister()ed conf classes.
                 # "new_value" in this case is actually a dict of sub-section
                 # items.
-                conf_class = _conf_map[key]
+                conf_class = conf_map[key]
                 assert isinstance(new_value, dict), new_value
                 assert new_value, new_value
                 for k, nv in new_value.items():
@@ -553,7 +560,7 @@ class _Parser:
             else:
                 # We're not dealing with a section.
                 try:
-                    conf_class = _conf_map[None]
+                    conf_class = conf_map[None]
                 except KeyError:
                     raise UnrecognizedKeyError(key, new_value, section=None)
                 self.process_pair(key, new_value, conf_class,
@@ -631,7 +638,9 @@ class _Parser:
         """Parse the configuration classes in order to collect all schemas
         which were not overwritten by the config file.
         """
-        for section, conf_class in _conf_map.items():
+        with _lock_ctx():
+            conf_map = _conf_map.copy()
+        for section, conf_class in conf_map.items():
             for key, value in conf_class.__dict__.items():
                 if isinstance(value, schema):
                     schema_ = value
