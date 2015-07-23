@@ -38,6 +38,7 @@ __all__ = [
     # exceptions
     'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
     'RequiredKeyError', 'TypesMismatchError', 'UnrecognizedKeyError',
+    'AlreadyRegisteredError',
 ]
 __version__ = '0.2.0'
 __author__ = 'Giampaolo Rodola'
@@ -57,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# exceptions (public)
+# exceptions
 # =============================================================================
 
 
@@ -93,15 +94,26 @@ class ValidationError(Error):
 
 
 class AlreadyParsedError(Error):
-    """Called when parse() or parse_with_envvars() is called twice."""
+    """Raised when parse() or parse_with_envvars() is called twice."""
 
     def __str__(self):
         return 'configuration was already parsed once; you may want to use ' \
                'discard() and parse() again'
 
 
+class AlreadyRegisteredError(Error):
+    """Raised by @register when registering a class twice."""
+
+    def __init__(self, section):
+        self.section = section
+
+    def __str__(self):
+        return "a configuration class was already registered for " \
+               "section %r" % self.section
+
+
 class NotParsedError(Error):
-    """Called when get_parsed_conf() is called but parse() has not been
+    """Raised when get_parsed_conf() is called but parse() has not been
     called yet.
     """
 
@@ -109,9 +121,7 @@ class NotParsedError(Error):
         return 'configuration is not parsed yet; use parse() first'
 
 
-# =============================================================================
-# exceptions (internal)
-# =============================================================================
+# --- exceptions raised on parse()
 
 
 class UnrecognizedKeyError(Error):
@@ -398,8 +408,7 @@ def register(section=None):
         return klass
 
     if section in _conf_map:
-        raise ValueError("a conf class was already registered for "
-                         "section %r" % section)
+        raise AlreadyRegisteredError(section)
     return wrapper
 
 
@@ -478,7 +487,7 @@ class _Parser:
                     }
             if self.file_parser is None:
                 if not hasattr(file, 'name'):
-                    raise Error("can't determine format from a file "
+                    raise Error("can't determine file format from a file "
                                 "object with no 'name' attribute")
                 try:
                     ext = os.path.splitext(file.name)[1]

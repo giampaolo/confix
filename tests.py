@@ -15,7 +15,7 @@ from confix import Error, UnrecognizedKeyError, RequiredKeyError
 from confix import istrue, isin, isnotin, isemail, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
-from confix import ValidationError
+from confix import ValidationError, AlreadyRegisteredError
 
 try:
     import toml
@@ -698,7 +698,7 @@ class TestParse(unittest.TestCase):
             parse(file)
         self.assertEqual(
             str(cm.exception),
-            "can't determine format from a file object with no 'name' "
+            "can't determine file format from a file object with no 'name' "
             "attribute")
 
         file = io.StringIO()
@@ -768,6 +768,11 @@ class TestExceptions(unittest.TestCase):
     def test_already_parsed_error(self):
         exc = AlreadyParsedError()
         self.assertIn('already parsed', str(exc))
+
+    def test_already_registered_error(self):
+        exc = AlreadyRegisteredError('foo')
+        self.assertIn('already registered', str(exc))
+        self.assertIn('foo', str(exc))
 
     def test_not_parsed_error(self):
         exc = NotParsedError()
@@ -916,12 +921,10 @@ class TestRegister(unittest.TestCase):
         class config:
             foo = 1
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(AlreadyRegisteredError):
             @register()
             class config_2:
                 foo = 1
-
-        self.assertIn("already registered", str(cm.exception))
 
     def test_decorate_fun(self):
         with self.assertRaises(TypeError) as cm:
