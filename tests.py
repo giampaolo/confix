@@ -817,11 +817,28 @@ class TestGetParsedConf(unittest.TestCase):
 # ===================================================================
 
 
-class TestRegisterWrapper(unittest.TestCase):
+class TestRegister(unittest.TestCase):
 
     def setUp(self):
         discard()
     tearDown = setUp
+
+    def test_dictify_and_method(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+            _hidden = 3
+
+            @classmethod
+            def some_method(cls):
+                return 1
+
+        self.assertEqual(dict(config), {'foo': 1, 'bar': 2})
+        self.assertEqual(config.some_method(), 1)
+        parse()
+        self.assertEqual(dict(config), {'foo': 1, 'bar': 2})
+        self.assertEqual(config.some_method(), 1)
 
     def test_special_methods(self):
         @register()
@@ -866,7 +883,7 @@ class TestMisc(unittest.TestCase):
     def test__all__(self):
         dir_confix = dir(confix)
         for name in dir_confix:
-            if name in ('configparser', 'logger'):
+            if name in ('configparser', 'logger', 'basestring'):
                 continue
             if not name.startswith('_'):
                 try:

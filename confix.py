@@ -343,13 +343,38 @@ class schema(collections.namedtuple('field',
 
 
 def register(section=None):
-    """Register a configuration class which will be parsed later."""
+    """A decorator which registers a configuration class which will
+    be parsed later.
+    If `section` is `None` it is assumed that the configuration file
+    will not be split in sub-sections otherwise *section* is the name
+    of a specific section which will be referenced by the config file.
+    All class attributes starting with an underscore will be ignored,
+    same for methods, classmethods or any other non-callable type.
+    A class decoratored with this method becomes dict()-able.
+    """
+    def add_metaclass(klass):
+        class itype(type):
+            def __iter__(self):
+                # this will make the class dict()able
+                for k, v in inspect.getmembers(self):
+                    if not k.startswith('_') and not inspect.isroutine(v):
+                        yield (k, v)
+
+        name = klass.__name__
+        bases = klass.__bases__
+        # is this really necessary?
+        skip = set(('__dict__', '__weakref__'))
+        dct = dict((k, v) for k, v in vars(klass).items() if k not in skip)
+        new_class = itype(name, bases, dct)
+        return new_class
+
     def wrapper(klass):
         if not inspect.isclass(klass):
             raise TypeError("register decorator is supposed to be used "
                             "against a class (got %r)" % klass)
-        _conf_map[section] = klass
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
+        klass = add_metaclass(klass)
+        _conf_map[section] = klass
         return klass
 
     if section in _conf_map:
@@ -362,13 +387,6 @@ def get_parsed_conf():
     """Return the whole parsed configuration as a dict.
     If parse() wasn't called yet it will raise NotParsedError.
     """
-    def conf_class_to_dict(conf_class):
-        ret = {}
-        for k, v in inspect.getmembers(conf_class):
-            if not k.startswith('_') and not inspect.isroutine(v):
-                ret[k] = v
-        return ret
-
     if not _parsed:
         raise NotParsedError
     ret = {}
@@ -376,10 +394,10 @@ def get_parsed_conf():
     # root section
     if None in cmap:
         conf_class = cmap.pop(None)
-        ret = conf_class_to_dict(conf_class)
+        ret = dict(conf_class)
     # other sections
     for section, conf_class in cmap.items():
-        ret[section] = conf_class_to_dict(conf_class)
+        ret[section] = dict(conf_class)
     return ret
 
 

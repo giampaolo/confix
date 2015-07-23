@@ -48,10 +48,26 @@ API reference
 
 .. function:: confix.register(section=None)
 
-    Register a configuration class which will be parsed later. If *section*
-    is ``None`` it is assumed the configuration file will not be split in
-    sub-sections otherwise *section* is the name of a specific section in the
-    config file.
+    A decorator which registers a configuration class which will be parsed
+    later.
+    If *section* is ``None`` it is assumed that the configuration file will not
+    be split in sub-sections otherwise *section* is the name of a specific
+    section which will be referenced by the config file.
+    All class attributes starting with an underscore will be ignored, same
+    for methods, classmethods or any other non-callable type.
+    A class decoratored with this method becomes dict()-able.
+
+    .. code-block:: python
+
+        >>> import confix
+        >>>
+        >>> @confix.register()
+        >>> class config:
+        ...     foo = 1
+        ...     bar = 2
+        ...
+        >>> dict(config)
+        {'foo': 1, 'bar': 2}
 
 .. function:: schema(default=_DEFAULT, required=False, validator=None)
 

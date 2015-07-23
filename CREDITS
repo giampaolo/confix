@@ -2,3 +2,6 @@
 
 - Michele Cella: original idea of overwriting class attributes from a static
   config file.
+
+- Josiah Carlson (https://github.com/josiahcarlson): hack to make the
+  registered class dict()able.
