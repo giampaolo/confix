@@ -503,20 +503,20 @@ class _Parser:
         """Iterate over all process env vars and return a dict() of
         env vars whose name match they keys defined by conf class.
         """
-        conf_class = _conf_map[None]
-        conf_class_names = set(conf_class.__dict__.keys())
-        if not self.envvar_case_sensitive:
-            conf_class_names = set([x.lower() for x in conf_class_names])
-
         conf = {}
-        env = os.environ.copy()
-        for name, value in env.items():
+        for section, conf_class in _conf_map.items():
+            conf_class_names = set(conf_class.__dict__.keys())
             if not self.envvar_case_sensitive:
-                name = name.lower()
-            if name in conf_class_names:
-                default_value = getattr(conf_class, name)
-                value = self.envvar_parser(name, value, default_value)
-                conf[name] = value
+                conf_class_names = set([x.lower() for x in conf_class_names])
+
+            env = os.environ.copy()
+            for name, value in env.items():
+                if not self.envvar_case_sensitive:
+                    name = name.lower()
+                if name in conf_class_names:
+                    default_value = getattr(conf_class, name)
+                    value = self.envvar_parser(name, value, default_value)
+                    conf[name] = value
         return conf
 
     def process_conf(self, conf):
