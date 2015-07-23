@@ -847,8 +847,29 @@ class TestRegister(unittest.TestCase):
             foo = 1
             bar = 2
 
+            @classmethod
+            def some_method(cls):
+                return 1
+
         self.assertEqual(config.__doc__, "docstring")
         self.assertEqual(config.__name__, "config")
+        # __len__
+        self.assertEqual(len(config), 2)
+        # __getitem__
+        self.assertEqual(config['foo'], 1)
+        # __setitem__
+        config['foo'] == 33
+        self.assertEqual(config['foo'], 1)
+        # __contains__
+        assert 'foo' in config
+        # should we allow this?
+        assert 'some_method' in config
+        # __delitem__
+        del config['foo']
+        assert 'foo' not in config
+        self.assertEqual(len(config), 1)
+        # __repr__
+        repr(config)
 
     def test_register_twice(self):
         @register()

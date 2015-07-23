@@ -354,11 +354,30 @@ def register(section=None):
     """
     def add_metaclass(klass):
         class itype(type):
+
             def __iter__(self):
                 # this will make the class dict()able
                 for k, v in inspect.getmembers(self):
                     if not k.startswith('_') and not inspect.isroutine(v):
                         yield (k, v)
+
+            def __getitem__(self, key):
+                return getattr(self, key)
+
+            def __setitem__(self, key, value):
+                setattr(self, key, value)
+
+            def __delitem__(self, key):
+                delattr(self, key)
+
+            def __contains__(self, key):
+                return hasattr(self, key)
+
+            def __len__(self):
+                return len(dict(self))
+
+            def __eq__(self, other):
+                return dict(self) == dict(other)
 
         name = klass.__name__
         bases = klass.__bases__

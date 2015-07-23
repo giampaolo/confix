@@ -56,6 +56,7 @@ API reference
     All class attributes starting with an underscore will be ignored, same
     for methods, classmethods or any other non-callable type.
     A class decoratored with this method becomes dict()-able.
+    Keys can be accessed as normal attributes or also as a dict.
 
     .. code-block:: python
 
@@ -66,6 +67,10 @@ API reference
         ...     foo = 1
         ...     bar = 2
         ...
+        >>> config.foo
+        1
+        >>> config['foo']
+        1
         >>> dict(config)
         {'foo': 1, 'bar': 2}
 
