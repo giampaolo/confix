@@ -289,6 +289,32 @@ def parse_json(file):
     return json.loads(content)
 
 
+def parse_ini(file):
+    config = configparser.ConfigParser()
+    config.read(file.name)
+    ret = {}
+    for section, values in config._sections.items():
+        ret[section] = {}
+        for key, value in values.items():
+            value_stripped = value.strip()
+            if value.isdigit():
+                value = int(value)
+            elif value_stripped in _BOOL_TRUE:
+                value = True
+            elif value_stripped in _BOOL_FALSE:
+                value = False
+            else:
+                # guard against float('inf') which returns 'infinite'
+                if value_stripped != 'inf':
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+            ret[section][key] = value
+        ret[section].pop('__name__', None)
+    return ret
+
+
 def parse_envvar(name, value, default_value):
     if isinstance(default_value, schema):
         default_value = default_value.default
@@ -315,32 +341,6 @@ def parse_envvar(name, value, default_value):
     _log("envvar=%s, value=%r, default_value=%r, "
          "casted_to=%r" % (name, value, default_value, value))
     return value
-
-
-def parse_ini(file):
-    config = configparser.ConfigParser()
-    config.read(file.name)
-    ret = {}
-    for section, values in config._sections.items():
-        ret[section] = {}
-        for key, value in values.items():
-            value_stripped = value.strip()
-            if value.isdigit():
-                value = int(value)
-            elif value_stripped in _BOOL_TRUE:
-                value = True
-            elif value_stripped in _BOOL_FALSE:
-                value = False
-            else:
-                # guard against float('inf') which returns 'infinite'
-                if value_stripped != 'inf':
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        pass
-            ret[section][key] = value
-        ret[section].pop('__name__', None)
-    return ret
 
 
 # =============================================================================
