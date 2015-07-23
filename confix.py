@@ -52,14 +52,16 @@ _PY3 = sys.version_info >= (3, )
 _BOOL_TRUE = set(("1", "yes", "true", "on"))
 _BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")
+_DEFAULT = object()
 _threading_lock = threading.Lock()
 _multiprocessing_lock = multiprocessing.Lock()
+_conf_map = {}
+_parsed = False
+logger = logging.getLogger(__name__)
+
 
 if _PY3:
     basestring = str
-
-
-logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -344,11 +346,6 @@ def parse_ini(file):
 # =============================================================================
 # rest of public API
 # =============================================================================
-
-
-_conf_map = {}
-_parsed = False
-_DEFAULT = object()
 
 
 class schema(collections.namedtuple('field',
