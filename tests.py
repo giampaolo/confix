@@ -668,43 +668,66 @@ class TestValidators(unittest.TestCase):
 
 
 # ===================================================================
-# tests misc
+# parse() tests
 # ===================================================================
 
 
-class TestMisc(unittest.TestCase):
+class TestParse(unittest.TestCase):
 
-    TESTFN = None
-
-    def tearDown(self):
+    def setUp(self):
         discard()
-        if self.TESTFN is not None:
-            unlink(self.TESTFN)
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls.TESTFN is not None:
-            unlink(TESTFN)
-
-    def test_decorate_fun(self):
-        with self.assertRaises(TypeError) as cm:
-            @register()
-            def foo():
-                pass
-
-        self.assertIn(
-            'register decorator is supposed to be used against a class',
-            str(cm.exception))
-
-    def test_translators_not_callable(self):
-        self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
-        self.assertRaises(TypeError, parse_with_envvars, value_translator=1)
+    tearDown = setUp
 
     def test_parser_with_no_file(self):
         self.assertRaises(ValueError, parse, file_parser=lambda x: {})
 
     def test_no_registered_class(self):
         self.assertRaises(Error, parse)
+
+    def test_file_like(self):
+        @register()
+        class foo:
+            foo = 1
+
+        file = io.StringIO()
+        with self.assertRaises(Error) as cm:
+            parse(file)
+        self.assertEqual(
+            str(cm.exception),
+            "can't determine format from a file object with no 'name' "
+            "attribute")
+
+        file = io.StringIO()
+        parse(file, file_parser=lambda x: {})
+
+
+# ===================================================================
+# parse_with_envvar() tests
+# ===================================================================
+
+
+class TestParseWithEnvvars(unittest.TestCase):
+
+    def setUp(self):
+        discard()
+    tearDown = setUp
+
+    def test_translators_not_callable(self):
+        self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
+        self.assertRaises(TypeError, parse_with_envvars, value_translator=1)
+
+    def test_envvar_parser_not_callable(self):
+        with self.assertRaises(TypeError) as cm:
+            parse_with_envvars(envvar_parser=1)
+        self.assertIn("not a callable", str(cm.exception))
+
+
+# ===================================================================
+# exception classes tests
+# ===================================================================
+
+
+class TestExceptions(unittest.TestCase):
 
     def test_exceptions(self):
         exc = UnrecognizedKeyError(key='foo', value='bar')
@@ -723,41 +746,13 @@ class TestMisc(unittest.TestCase):
             "type mismatch for key 'foo' (default_value=1, %s) got "
             "'bar' (%s)" % (type(1), type("")))
 
-    def test_file_like(self):
-        @register()
-        class foo:
-            foo = 1
 
-        file = io.StringIO()
-        with self.assertRaises(Error) as cm:
-            parse(file)
-        self.assertEqual(
-            str(cm.exception),
-            "can't determine format from a file object with no 'name' "
-            "attribute")
-
-        file = io.StringIO()
-        parse(file, file_parser=lambda x: {})
-
-    def test_envvar_parser_not_callable(self):
-        with self.assertRaises(TypeError) as cm:
-            parse_with_envvars(envvar_parser=1)
-        self.assertIn("not a callable", str(cm.exception))
-
-    def test_register_twice(self):
-        @register()
-        class config:
-            foo = 1
-
-        with self.assertRaises(ValueError) as cm:
-            @register()
-            class config_2:
-                foo = 1
-
-        self.assertIn("already registered", str(cm.exception))
+# ===================================================================
+# get_parsed_conf() tests
+# ===================================================================
 
 
-class TestGetConf(unittest.TestCase):
+class TestGetParsedConf(unittest.TestCase):
 
     def setUp(self):
         discard()
@@ -797,6 +792,60 @@ class TestGetConf(unittest.TestCase):
         parse()
         self.assertEqual(
             get_parsed_conf(), {'root_value': 1, 'sub': {'sub_value': 1}})
+
+    def test_hidden_key(self):
+        @register()
+        class config:
+            foo = 1
+            _hidden = 2
+
+        parse()
+        self.assertEqual(
+            get_parsed_conf(), {'foo': 1})
+
+
+# ===================================================================
+# @register() tests
+# ===================================================================
+
+
+class TestRegisterWrapper(unittest.TestCase):
+
+    def setUp(self):
+        discard()
+    tearDown = setUp
+
+    def test_special_methods(self):
+        @register()
+        class config:
+            """docstring"""
+            foo = 1
+            bar = 2
+
+        self.assertEqual(config.__doc__, "docstring")
+        self.assertEqual(config.__name__, "config")
+
+    def test_register_twice(self):
+        @register()
+        class config:
+            foo = 1
+
+        with self.assertRaises(ValueError) as cm:
+            @register()
+            class config_2:
+                foo = 1
+
+        self.assertIn("already registered", str(cm.exception))
+
+    def test_decorate_fun(self):
+        with self.assertRaises(TypeError) as cm:
+            @register()
+            def foo():
+                pass
+
+        self.assertIn(
+            'register decorator is supposed to be used against a class',
+            str(cm.exception))
 
 
 def main():
