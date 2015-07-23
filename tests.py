@@ -92,27 +92,6 @@ class TestBase(object):
         self.assertEqual(config.foo, 1)
         self.assertEqual(config.bar, 2)
 
-    def test_no_conf_file(self):
-        # parse() is supposed to parse also if no conf file is passed
-        @register()
-        class config:
-            foo = 1
-            bar = schema(10)
-
-        parse()
-        self.assertEqual(config.foo, 1)
-        self.assertEqual(config.bar, 10)
-
-    def test_conf_file_w_unknown_ext(self):
-        # Conf file with unsupported extension.
-        with open(TESTFN, 'w') as f:
-            f.write('foo')
-        self.addCleanup(unlink, TESTFN)
-        with self.assertRaises(ValueError) as cm:
-            parse(TESTFN)
-        self.assertIn("don't know how to parse", str(cm.exception))
-        self.assertIn("extension not supported", str(cm.exception))
-
     def test_conf_file_overrides_key(self):
         # Conf file overrides one key, other one should be default.
         @register()
@@ -184,19 +163,6 @@ class TestBase(object):
     #     with self.assertRaises(Error) as cm:
     #         parse(self.TESTFN)
 
-    def test_parse_called_twice(self):
-        @register()
-        class config:
-            foo = 1
-            bar = 2
-
-        self.dict_to_file(
-            dict(foo=5, bar=6)
-        )
-        parse(self.TESTFN)
-        self.assertRaises(AlreadyParsedError, parse)
-        self.assertRaises(AlreadyParsedError, parse_with_envvars)
-
     # --- test schemas
 
     def test_schema_base(self):
@@ -238,12 +204,6 @@ class TestBase(object):
         )
         parse(self.TESTFN)
         self.assertEqual(config.foo, 5)
-
-    def test_schema_errors(self):
-        # no default nor required=True
-        self.assertRaises(TypeError, schema)
-        # not callable validator
-        self.assertRaises(ValueError, schema, 10, False, 'foo')
 
     def test_schemas_w_multi_validators(self):
         def fun1(x):
@@ -513,6 +473,8 @@ class TestTomlMixin(TestBase, unittest.TestCase):
         self.write_to_file(s)
 
 
+# TODO: see what to do with root section and re-enable this
+
 # class TestIniMixin(TestBase, unittest.TestCase):
 #     TESTFN = TESTFN + 'testfile.ini'
 
@@ -678,6 +640,27 @@ class TestParse(unittest.TestCase):
         discard()
     tearDown = setUp
 
+    def test_no_conf_file(self):
+        # parse() is supposed to parse also if no conf file is passed
+        @register()
+        class config:
+            foo = 1
+            bar = schema(10)
+
+        parse()
+        self.assertEqual(config.foo, 1)
+        self.assertEqual(config.bar, 10)
+
+    def test_conf_file_w_unknown_ext(self):
+        # Conf file with unsupported extension.
+        with open(TESTFN, 'w') as f:
+            f.write('foo')
+        self.addCleanup(unlink, TESTFN)
+        with self.assertRaises(ValueError) as cm:
+            parse(TESTFN)
+        self.assertIn("don't know how to parse", str(cm.exception))
+        self.assertIn("extension not supported", str(cm.exception))
+
     def test_parser_with_no_file(self):
         self.assertRaises(ValueError, parse, file_parser=lambda x: {})
 
@@ -700,6 +683,16 @@ class TestParse(unittest.TestCase):
         file = io.StringIO()
         parse(file, file_parser=lambda x: {})
 
+    def test_parse_called_twice(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+
+        parse()
+        self.assertRaises(AlreadyParsedError, parse)
+        self.assertRaises(AlreadyParsedError, parse_with_envvars)
+
 
 # ===================================================================
 # parse_with_envvar() tests
@@ -721,6 +714,19 @@ class TestParseWithEnvvars(unittest.TestCase):
             parse_with_envvars(envvar_parser=1)
         self.assertIn("not a callable", str(cm.exception))
 
+
+# ===================================================================
+# schema() tests
+# ===================================================================
+
+
+class TestSchema(unittest.TestCase):
+
+    def test_errors(self):
+        # no default nor required=True
+        self.assertRaises(TypeError, schema)
+        # not callable validator
+        self.assertRaises(ValueError, schema, 10, False, 'foo')
 
 # ===================================================================
 # exception classes tests
