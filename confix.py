@@ -413,8 +413,8 @@ def register(section=None):
             raise TypeError("register decorator is supposed to be used "
                             "against a class (got %r)" % klass)
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
-        klass = add_metaclass(klass)
         with _lock_ctx():
+            klass = add_metaclass(klass)
             _conf_map[section] = klass
         return klass
 
@@ -428,10 +428,11 @@ def get_parsed_conf():
     """Return the whole parsed configuration as a dict.
     If parse() wasn't called yet it will raise NotParsedError.
     """
-    if not _parsed:
-        raise NotParsedError
+    with _lock_ctx():
+        if not _parsed:
+            raise NotParsedError
+        cmap = _conf_map.copy()
     ret = {}
-    cmap = _conf_map.copy()
     # root section
     if None in cmap:
         conf_class = cmap.pop(None)
@@ -516,8 +517,7 @@ class _Parser:
         env vars whose name match they keys defined by conf class.
         """
         conf = {}
-        with _lock_ctx():
-            conf_map = _conf_map.copy()
+        conf_map = _conf_map.copy()
         for section, conf_class in conf_map.items():
             conf_class_names = set(conf_class.__dict__.keys())
             if not self.envvar_case_sensitive:
@@ -534,12 +534,9 @@ class _Parser:
         return conf
 
     def process_conf(self, conf):
-        with _lock_ctx():
-            conf_map = _conf_map.copy()
-
+        conf_map = _conf_map.copy()
         if not conf_map:
             raise Error("no registered conf classes were found")
-
         # iterate over file / envvar conf
         for key, new_value in conf.items():
             # this should never happen
@@ -635,8 +632,7 @@ class _Parser:
         """Parse the configuration classes in order to collect all schemas
         which were not overwritten by the config file.
         """
-        with _lock_ctx():
-            conf_map = _conf_map.copy()
+        conf_map = _conf_map.copy()
         for section, conf_class in conf_map.items():
             for key, value in conf_class.__dict__.items():
                 if isinstance(value, schema):
@@ -669,8 +665,9 @@ def parse(conf_file=None, file_parser=None, type_check=True):
       case an option specified in the configuration file has a different
       type than the one defined in the configuration class.
     """
-    _Parser(conf_file=conf_file, file_parser=file_parser,
-            type_check=type_check)
+    with _lock_ctx():
+        _Parser(conf_file=conf_file, file_parser=file_parser,
+                type_check=type_check)
 
 
 def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
@@ -691,12 +688,13 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
       If config class value is an int, float or bool the value will be
       changed in accordance.
     """
-    _Parser(conf_file=conf_file,
-            file_parser=file_parser,
-            type_check=type_check,
-            parse_envvars=True,
-            envvar_case_sensitive=case_sensitive,
-            envvar_parser=envvar_parser)
+    with _lock_ctx():
+        _Parser(conf_file=conf_file,
+                file_parser=file_parser,
+                type_check=type_check,
+                parse_envvars=True,
+                envvar_case_sensitive=case_sensitive,
+                envvar_parser=envvar_parser)
 
 
 def discard():
