@@ -56,7 +56,7 @@ def unlink(path):
 # ===================================================================
 
 
-class TestBase(object):
+class BaseMixin(object):
     """Base class from which mixin classes are derived."""
     TESTFN = None
 
@@ -465,7 +465,7 @@ class TestBase(object):
 
 
 @unittest.skipUnless(yaml is not None, "yaml module is not installed")
-class TestYamlMixin(TestBase, unittest.TestCase):
+class TestYamlMixin(BaseMixin, unittest.TestCase):
     TESTFN = TESTFN + '.yaml'
 
     def dict_to_file(self, dct):
@@ -473,7 +473,7 @@ class TestYamlMixin(TestBase, unittest.TestCase):
         self.write_to_file(s)
 
 
-class TestJsonMixin(TestBase, unittest.TestCase):
+class TestJsonMixin(BaseMixin, unittest.TestCase):
     TESTFN = TESTFN + '.json'
 
     def dict_to_file(self, dct):
@@ -481,7 +481,7 @@ class TestJsonMixin(TestBase, unittest.TestCase):
 
 
 @unittest.skipUnless(toml is not None, "toml module is not installed")
-class TestTomlMixin(TestBase, unittest.TestCase):
+class TestTomlMixin(BaseMixin, unittest.TestCase):
     TESTFN = TESTFN + '.toml'
 
     def dict_to_file(self, dct):
@@ -491,7 +491,7 @@ class TestTomlMixin(TestBase, unittest.TestCase):
 
 # TODO: see what to do with root section and re-enable this
 
-# class TestIniMixin(TestBase, unittest.TestCase):
+# class TestIniMixin(BaseMixin, unittest.TestCase):
 #     TESTFN = TESTFN + 'testfile.ini'
 
     # def dict_to_file(self, dct):
