@@ -36,8 +36,8 @@ setup-dev-env: install-git-hooks
 	$(PYTHON) -m pip install --user --upgrade \
 		coverage \
 		flake8 \
-		nose \
 		pep8 \
+		pytest \
 		pyyaml \
 		sphinx \
 		sphinx-pypi-upload \
@@ -51,13 +51,12 @@ uninstall:
 	cd ..; $(PYTHON) -m pip uninstall -y -v confix
 
 test: install
-	$(PYTHON) $(TSCRIPT)
+	$(PYTHON) -m pytest -s -v $(TSCRIPT)
 
-# Run a specific test by name; e.g. "make test-by-name disk_" will run
-# all test methods containing "disk_" in their name.
-# Requires "pip install nose".
+# Run a specific test by name; e.g. "make test-by-name register" will run
+# all test methods containing "register" in their name.
 test-by-name: install
-	@$(PYTHON) -m nose $(TSCRIPT) --nocapture -v -m $(filter-out $@,$(MAKECMDGOALS))
+	$(PYTHON) -m pytest -s -v $(TSCRIPT) -k $(filter-out $@,$(MAKECMDGOALS))
 
 coverage: install
 	# Note: coverage options are controlled by .coveragerc file

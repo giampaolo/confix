@@ -197,7 +197,7 @@ def _log(s):
 
 
 def _has_multi_conf_classes():
-    """Return True if more than config class has been register()ed."""
+    """Return True if more than one config class has been register()ed."""
     return len(_conf_map) > 1
 
 
