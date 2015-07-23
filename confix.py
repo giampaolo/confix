@@ -5,15 +5,13 @@ A language-agnostic configuration parser.
 Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
-# TODO / IDEAS / OPEN QUESTIONS:
-# - have @register modify the conf class in order to provide / attach:
-#   - a nice __repr__
-#   - a nice __dir__
-# - should parse() return get_parsed_conf()?
-# - when using multiple conf classes raise exception if a sub section
-#   overrides a root key
-# - add 'transformer' callable to schema
-# - schema: figure out what do in case no default value is specified
+# TODO: @register __repr__?
+# TODO: @register __dir__?
+# TODO: should parse() return get_parsed_conf()?
+# TODO: when using multiple conf classes raise exception if a sub section
+#       overrides a root key
+# TODO: add 'transformer' callable to schema
+# TODO: schema: figure out what do in case no default value is specified
 
 import collections
 import functools
@@ -248,12 +246,12 @@ def isemail(value):
 
 
 def parse_yaml(file):
-    import yaml
+    import yaml  # requires pip install pyyaml
     return yaml.load(file.read())
 
 
 def parse_toml(file):
-    import toml
+    import toml  # requires pip install toml
     return toml.loads(file.read())
 
 
@@ -274,6 +272,8 @@ def parse_envvar(name, value, default_value):
             value = True
         elif value.lower() in _BOOL_FALSE:
             value = False
+        else:
+            raise TypesMismatchError(name, default_value, value)
     elif isinstance(default_value, int):
         try:
             value = int(value)
@@ -284,6 +284,9 @@ def parse_envvar(name, value, default_value):
             value = float(value)
         except ValueError:
             raise TypesMismatchError(name, default_value, value)
+    else:
+        # leave the value unmodified (str)
+        pass
     _log("envvar=%s, value=%r, default_value=%r, "
          "casted_to=%r" % (name, value, default_value, value))
     return value
@@ -330,15 +333,15 @@ class schema(collections.namedtuple('field',
 
     def __new__(cls, default=_DEFAULT, required=False, validator=None):
         if not required and default is _DEFAULT:
-            raise TypeError("specify a default value or set required=True")
+            raise ValueError("specify a default value or set required=True")
         if validator is not None:
             if not isinstance(validator, collections.Iterable):
                 if not callable(validator):
-                    raise ValueError("%r is not callable" % validator)
+                    raise TypeError("%r is not callable" % validator)
             else:
                 for v in validator:
                     if not callable(v):
-                        raise ValueError("%r is not callable" % v)
+                        raise TypeError("%r is not callable" % v)
         return super(schema, cls).__new__(cls, default, required, validator)
 
 
@@ -364,8 +367,8 @@ def register(section=None):
             def __getitem__(self, key):
                 return getattr(self, key)
 
-            def __setitem__(self, key, value):
-                setattr(self, key, value)
+            # def __setitem__(self, key, value):
+            #     setattr(self, key, value)
 
             def __delitem__(self, key):
                 delattr(self, key)
@@ -375,9 +378,6 @@ def register(section=None):
 
             def __len__(self):
                 return len(dict(self))
-
-            def __eq__(self, other):
-                return dict(self) == dict(other)
 
         name = klass.__name__
         bases = klass.__bases__

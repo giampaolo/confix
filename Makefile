@@ -97,3 +97,6 @@ git-tag-release:
 install-git-hooks:
 	ln -sf ../../.git-pre-commit .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
+
+todos:
+	git grep -n TODO

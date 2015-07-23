@@ -1,6 +1,3 @@
-# TODO:
-# -test parse()'s 'format' parameter
-
 import errno
 import imp
 import io
@@ -63,8 +60,12 @@ class TestBase(object):
     """Base class from which mixin classes are derived."""
     TESTFN = None
 
+    def setUp(self):
+        self.original_environ = os.environ.copy()
+
     def tearDown(self):
         discard()
+        os.environ = self.original_environ
         unlink(self.TESTFN)
 
     @classmethod
@@ -367,7 +368,9 @@ class TestBase(object):
         class config:
             some_int = 1
             some_float = 0.1
+            some_bool = True
 
+        # int
         os.environ['SOME_INT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
@@ -375,14 +378,25 @@ class TestBase(object):
         self.assertEqual(cm.exception.key, 'some_int')
         self.assertEqual(cm.exception.default_value, 1)
         self.assertEqual(cm.exception.new_value, 'foo')
-
         del os.environ['SOME_INT']
+
+        # float
         os.environ['SOME_FLOAT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
         # self.assertEqual(cm.exception.section, 'name')
         self.assertEqual(cm.exception.key, 'some_float')
         self.assertEqual(cm.exception.default_value, 0.1)
+        self.assertEqual(cm.exception.new_value, 'foo')
+        del os.environ['SOME_FLOAT']
+
+        # bool
+        os.environ['SOME_BOOL'] = 'foo'
+        with self.assertRaises(TypesMismatchError) as cm:
+            parse_with_envvars()
+        # self.assertEqual(cm.exception.section, 'name')
+        self.assertEqual(cm.exception.key, 'some_bool')
+        self.assertEqual(cm.exception.default_value, True)
         self.assertEqual(cm.exception.new_value, 'foo')
 
     # --- test multiple sections
@@ -608,7 +622,10 @@ class TestValidators(unittest.TestCase):
         assert fun('3')
         assert fun('4')
         self.assertRaises(ValidationError, fun, '2')
-        self.assertRaises(ValueError, isin, [])
+        self.assertRaisesRegexp(
+            TypeError, "is not iterable", isnotin, None)
+        self.assertRaisesRegexp(
+            ValueError, "sequence can't be empty", isnotin, [])
 
     def test_isemail(self):
         assert isemail("foo@bar.com")
@@ -616,6 +633,8 @@ class TestValidators(unittest.TestCase):
         self.assertRaises(ValidationError, isemail, "@bar.com")
         self.assertRaises(ValidationError, isemail, "foo@bar")
         self.assertRaises(ValidationError, isemail, "foo@bar.")
+        self.assertRaisesRegexp(
+            ValidationError, "expected a string", isemail, None)
         assert isemail("email@domain.com")
         assert isemail("\"email\"@domain.com")
         assert isemail("firstname.lastname@domain.com")
@@ -726,9 +745,13 @@ class TestSchema(unittest.TestCase):
 
     def test_errors(self):
         # no default nor required=True
-        self.assertRaises(TypeError, schema)
+        self.assertRaisesRegexp(
+            ValueError, "specify a default value or set required", schema)
         # not callable validator
-        self.assertRaises(ValueError, schema, 10, False, 'foo')
+        self.assertRaisesRegexp(
+            TypeError, "not callable", schema, default=10, validator=1)
+        self.assertRaisesRegexp(
+            TypeError, "not callable", schema, default=10, validator=['foo'])
 
 # ===================================================================
 # exception classes tests
@@ -737,17 +760,34 @@ class TestSchema(unittest.TestCase):
 
 class TestExceptions(unittest.TestCase):
 
-    def test_exceptions(self):
+    def test_error(self):
+        exc = Error('foo')
+        self.assertEqual(str(exc), 'foo')
+        self.assertEqual(repr(exc), 'foo')
+
+    def test_already_parsed_error(self):
+        exc = AlreadyParsedError()
+        self.assertIn('already parsed', str(exc))
+
+    def test_not_parsed_error(self):
+        exc = NotParsedError()
+        self.assertIn('not parsed', str(exc))
+
+    def test_unrecognized_key_error(self):
         exc = UnrecognizedKeyError(key='foo', value='bar')
         self.assertEqual(
             str(exc),
             "config file provides key 'foo' with value 'bar' but key 'foo' "
             "is not defined in the config class")
+
+    def test_required_key_error(self):
         exc = RequiredKeyError(key="foo")
         self.assertEqual(
             str(exc),
             "configuration class requires 'foo' key to be specified via "
             "config file or env var")
+
+    def test_types_mismatch_error(self):
         exc = TypesMismatchError(key="foo", default_value=1, new_value='bar')
         self.assertEqual(
             str(exc),
