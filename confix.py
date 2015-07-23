@@ -353,7 +353,7 @@ def register(section=None):
     A class decoratored with this method becomes dict()-able.
     """
     def add_metaclass(klass):
-        class itype(type):
+        class meta_wrapper(type):
 
             def __iter__(self):
                 # this will make the class dict()able
@@ -384,7 +384,7 @@ def register(section=None):
         # is this really necessary?
         skip = set(('__dict__', '__weakref__'))
         dct = dict((k, v) for k, v in vars(klass).items() if k not in skip)
-        new_class = itype(name, bases, dct)
+        new_class = meta_wrapper(name, bases, dct)
         return new_class
 
     def wrapper(klass):
