@@ -2,6 +2,7 @@
 # -test parse()'s 'format' parameter
 
 import errno
+import imp
 import io
 import json
 import os
@@ -12,6 +13,7 @@ import textwrap
 # except ImportError:
 #     import ConfigParser as configparser
 
+import confix
 from confix import Error, UnrecognizedKeyError, RequiredKeyError
 from confix import istrue, isin, isnotin, isemail, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
@@ -852,6 +854,49 @@ class TestRegisterWrapper(unittest.TestCase):
         self.assertIn(
             'register decorator is supposed to be used against a class',
             str(cm.exception))
+
+
+# ===================================================================
+# misc tests
+# ===================================================================
+
+
+class TestMisc(unittest.TestCase):
+
+    def test__all__(self):
+        dir_confix = dir(confix)
+        for name in dir_confix:
+            if name in ('configparser', 'logger'):
+                continue
+            if not name.startswith('_'):
+                try:
+                    __import__(name)
+                except ImportError:
+                    if name not in confix.__all__:
+                        fun = getattr(confix, name)
+                        if fun is None:
+                            continue
+                        if (fun.__doc__ is not None and
+                                'deprecated' not in fun.__doc__.lower()):
+                            self.fail('%r not in confix.__all__' % name)
+
+        # Import 'star' will break if __all__ is inconsistent, see:
+        # https://github.com/giampaolo/psutil/issues/656
+        # Can't do `from confix import *` as it won't work on python 3
+        # so we simply iterate over __all__.
+        for name in confix.__all__:
+            self.assertIn(name, dir_confix)
+
+    def test_version(self):
+        self.assertEqual('.'.join([str(x) for x in confix.version_info]),
+                         confix.__version__)
+
+    def test_setup_script(self):
+        here = os.path.abspath(os.path.dirname(__file__))
+        setup_py = os.path.realpath(os.path.join(here, 'setup.py'))
+        module = imp.load_source('setup', setup_py)
+        self.assertRaises(SystemExit, module.setup)
+        self.assertEqual(module.get_version(), confix.__version__)
 
 
 def main():

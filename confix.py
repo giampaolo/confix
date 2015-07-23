@@ -29,11 +29,22 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
-
-__all__ = ['register', 'parse', 'discard', 'schema', 'ValidationError']
+__all__ = [
+    # constants
+    "version_info", "__version__",
+    # functions
+    'register', 'parse', 'parse_with_envvars', 'discard', 'schema',
+    'get_parsed_conf',
+    # validators
+    'isemail', 'isin', 'isnotin', 'istrue',
+    # exceptions
+    'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
+    'RequiredKeyError', 'TypesMismatchError', 'UnrecognizedKeyError',
+]
 __version__ = '0.2.0'
 __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
+version_info = tuple([int(num) for num in __version__.split('.')])
 
 _PY3 = sys.version_info >= (3, )
 _BOOL_TRUE = set(("1", "yes", "true", "on"))
@@ -627,3 +638,7 @@ def discard():
     global _parsed
     _conf_map.clear()
     _parsed = False
+
+
+if not _PY3:
+    del num
