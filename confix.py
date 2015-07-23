@@ -14,13 +14,16 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # TODO: schema: figure out what do in case no default value is specified
 
 import collections
+import contextlib
 import functools
 import inspect
 import json
 import logging
+import multiprocessing
 import os
 import re
 import sys
+import threading
 
 try:
     import configparser  # py3
@@ -49,6 +52,8 @@ _PY3 = sys.version_info >= (3, )
 _BOOL_TRUE = set(("1", "yes", "true", "on"))
 _BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")
+_threading_lock = threading.Lock()
+_multiprocessing_lock = multiprocessing.Lock()
 
 if _PY3:
     basestring = str
@@ -194,6 +199,13 @@ def _log(s):
 def _has_multi_conf_classes():
     """Return True if more than config class has been register()ed."""
     return len(_conf_map) > 1
+
+
+@contextlib.contextmanager
+def _lock_ctx():
+    with _threading_lock:
+        with _multiprocessing_lock:
+            yield
 
 
 # =============================================================================
@@ -404,7 +416,8 @@ def register(section=None):
                             "against a class (got %r)" % klass)
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         klass = add_metaclass(klass)
-        _conf_map[section] = klass
+        with _lock_ctx():
+            _conf_map[section] = klass
         return klass
 
     if section in _conf_map:
@@ -683,8 +696,9 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
 def discard():
     """Discard previous configuration (if any)."""
     global _parsed
-    _conf_map.clear()
-    _parsed = False
+    with _lock_ctx():
+        _conf_map.clear()
+        _parsed = False
 
 
 if not _PY3:
