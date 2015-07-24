@@ -7,6 +7,8 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 
 # TODO: @register __repr__?
 # TODO: @register __dir__?
+# TODO: should we raise exception if config class has key starting with "_"
+#       instead of skipping it?
 # TODO: should parse() return get_parsed_conf()?
 # TODO: when using multiple conf classes raise exception if a sub section
 #       overrides a root key

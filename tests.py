@@ -43,7 +43,7 @@ THIS_MODULE = os.path.splitext(os.path.basename(__file__))[0]
 TESTFN = '$testfile'
 
 
-def unlink(path):
+def safe_remove(path):
     try:
         os.remove(path)
     except OSError as err:
@@ -52,25 +52,28 @@ def unlink(path):
 
 
 # ===================================================================
-# base class
+# base test case and mixin class
 # ===================================================================
+
+
+class BaseTestCase(unittest.TestCase):
+
+    def setUp(self):
+        discard()
+        self.original_environ = os.environ.copy()
+        if getattr(self, 'TESTFN', None) is not None:
+            safe_remove(self.TESTFN)
+
+    def tearDown(self):
+        discard()
+        os.environ = self.original_environ
+        if getattr(self, 'TESTFN', None) is not None:
+            safe_remove(self.TESTFN)
 
 
 class BaseMixin(object):
     """Base class from which mixin classes are derived."""
     TESTFN = None
-
-    def setUp(self):
-        self.original_environ = os.environ.copy()
-
-    def tearDown(self):
-        discard()
-        os.environ = self.original_environ
-        unlink(self.TESTFN)
-
-    @classmethod
-    def tearDownClass(cls):
-        unlink(TESTFN)
 
     # --- utils
 
@@ -465,7 +468,7 @@ class BaseMixin(object):
 
 
 @unittest.skipUnless(yaml is not None, "yaml module is not installed")
-class TestYamlMixin(BaseMixin, unittest.TestCase):
+class TestYamlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.yaml'
 
     def dict_to_file(self, dct):
@@ -473,7 +476,7 @@ class TestYamlMixin(BaseMixin, unittest.TestCase):
         self.write_to_file(s)
 
 
-class TestJsonMixin(BaseMixin, unittest.TestCase):
+class TestJsonMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.json'
 
     def dict_to_file(self, dct):
@@ -481,7 +484,7 @@ class TestJsonMixin(BaseMixin, unittest.TestCase):
 
 
 @unittest.skipUnless(toml is not None, "toml module is not installed")
-class TestTomlMixin(BaseMixin, unittest.TestCase):
+class TestTomlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.toml'
 
     def dict_to_file(self, dct):
@@ -491,7 +494,7 @@ class TestTomlMixin(BaseMixin, unittest.TestCase):
 
 # TODO: see what to do with root section and re-enable this
 
-# class TestIniMixin(BaseMixin, unittest.TestCase):
+# class TestIniMixin(BaseMixin, BaseTestCase):
 #     TESTFN = TESTFN + 'testfile.ini'
 
     # def dict_to_file(self, dct):
@@ -513,12 +516,12 @@ class TestTomlMixin(BaseMixin, unittest.TestCase):
 # ===================================================================
 
 
-class TestIni(unittest.TestCase):
+class TestIni(BaseTestCase):
     TESTFN = TESTFN + '.ini'
 
     def tearDown(self):
         discard()
-        unlink(self.TESTFN)
+        safe_remove(self.TESTFN)
 
     def write_to_file(self, content):
         with open(self.TESTFN, 'w') as f:
@@ -602,7 +605,7 @@ class TestIni(unittest.TestCase):
 # ===================================================================
 
 
-class TestValidators(unittest.TestCase):
+class TestValidators(BaseTestCase):
 
     def test_istrue(self):
         assert istrue('foo')
@@ -655,11 +658,7 @@ class TestValidators(unittest.TestCase):
 # ===================================================================
 
 
-class TestParse(unittest.TestCase):
-
-    def setUp(self):
-        discard()
-    tearDown = setUp
+class TestParse(BaseTestCase):
 
     def test_no_conf_file(self):
         # parse() is supposed to parse also if no conf file is passed
@@ -676,7 +675,7 @@ class TestParse(unittest.TestCase):
         # Conf file with unsupported extension.
         with open(TESTFN, 'w') as f:
             f.write('foo')
-        self.addCleanup(unlink, TESTFN)
+        self.addCleanup(safe_remove, TESTFN)
         with self.assertRaises(ValueError) as cm:
             parse(TESTFN)
         assert "don't know how to parse" in str(cm.exception)
@@ -723,11 +722,7 @@ class TestParse(unittest.TestCase):
 # ===================================================================
 
 
-class TestParseWithEnvvars(unittest.TestCase):
-
-    def setUp(self):
-        discard()
-    tearDown = setUp
+class TestParseWithEnvvars(BaseTestCase):
 
     def test_translators_not_callable(self):
         self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
@@ -744,7 +739,7 @@ class TestParseWithEnvvars(unittest.TestCase):
 # ===================================================================
 
 
-class TestSchema(unittest.TestCase):
+class TestSchema(BaseTestCase):
 
     def test_errors(self):
         # no default nor required=True
@@ -761,7 +756,7 @@ class TestSchema(unittest.TestCase):
 # ===================================================================
 
 
-class TestExceptions(unittest.TestCase):
+class TestExceptions(BaseTestCase):
 
     def test_error(self):
         exc = Error('foo')
@@ -805,11 +800,7 @@ class TestExceptions(unittest.TestCase):
 # ===================================================================
 
 
-class TestGetParsedConf(unittest.TestCase):
-
-    def setUp(self):
-        discard()
-    tearDown = setUp
+class TestGetParsedConf(BaseTestCase):
 
     def test_root_only(self):
         @register()
@@ -859,11 +850,7 @@ class TestGetParsedConf(unittest.TestCase):
 # ===================================================================
 
 
-class TestRegister(unittest.TestCase):
-
-    def setUp(self):
-        discard()
-    tearDown = setUp
+class TestRegister(BaseTestCase):
 
     def test_dictify_and_method(self):
         @register()
@@ -938,7 +925,7 @@ class TestRegister(unittest.TestCase):
 # ===================================================================
 
 
-class TestMisc(unittest.TestCase):
+class TestMisc(BaseTestCase):
 
     def test__all__(self):
         dir_confix = dir(confix)
