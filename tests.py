@@ -943,7 +943,7 @@ class TestRegister(BaseTestCase):
 
         assert len(ws) == 1
         assert 'configuration class defined after parse' in \
-            ws[0].message.message
+            str(ws[0].message)
         assert ws[0].category is UserWarning
         # global conf will not include this
         assert get_parsed_conf() == {'foo': 1}
