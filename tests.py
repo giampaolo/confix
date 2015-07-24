@@ -474,7 +474,7 @@ class BaseMixin(object):
         with self.assertRaises(UnrecognizedKeyError) as cm:
             parse(self.TESTFN)
         assert cm.exception.key == 'http'
-        assert cm.exception.value == dict(username='bar')
+        assert cm.exception.new_value == dict(username='bar')
         assert cm.exception.section is None
 
     def test_multisection_unrecognized_key(self):
@@ -491,7 +491,7 @@ class BaseMixin(object):
         with self.assertRaises(UnrecognizedKeyError) as cm:
             parse(self.TESTFN)
         assert cm.exception.key == 'password'
-        assert cm.exception.value == 'bar'
+        assert cm.exception.new_value == 'bar'
         assert cm.exception.section == 'ftp'
 
 
@@ -793,7 +793,7 @@ class TestExceptions(BaseTestCase):
         assert 'not parsed' in str(exc)
 
     def test_unrecognized_key_error(self):
-        exc = UnrecognizedKeyError(key='foo', value='bar')
+        exc = UnrecognizedKeyError(key='foo', new_value='bar')
         assert str(exc) == \
             "config file provides key 'foo' with value 'bar' but key 'foo' " \
             "is not defined in the config class"

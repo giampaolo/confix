@@ -129,9 +129,9 @@ class UnrecognizedKeyError(Error):
     that is defined in the config file.
     """
 
-    def __init__(self, key, value, section=None, msg=None):
+    def __init__(self, key, new_value, section=None, msg=None):
         self.key = key
-        self.value = value
+        self.new_value = new_value
         self.section = section
         self.msg = msg
 
@@ -141,7 +141,7 @@ class UnrecognizedKeyError(Error):
         return self.msg or \
             "config file provides key %r with value %r but key %r is not " \
             "defined in the config class%s" % (
-                key, self.value, key, plural)
+                key, self.new_value, key, plural)
 
 
 class RequiredKeyError(Error):
@@ -303,34 +303,6 @@ def parse_ini(file):
             ret[section][key] = value
         ret[section].pop('__name__', None)
     return ret
-
-
-def parse_envvar(name, default_value, new_value):
-    if isinstance(default_value, schema):
-        default_value = default_value.default
-    if isinstance(default_value, bool):
-        if new_value.lower() in _BOOL_TRUE:
-            new_value = True
-        elif new_value.lower() in _BOOL_FALSE:
-            new_value = False
-        else:
-            raise TypesMismatchError(name, default_value, new_value)
-    elif isinstance(default_value, int):
-        try:
-            new_value = int(new_value)
-        except ValueError:
-            raise TypesMismatchError(name, default_value, new_value)
-    elif isinstance(default_value, float):
-        try:
-            new_value = float(new_value)
-        except ValueError:
-            raise TypesMismatchError(name, default_value, new_value)
-    else:
-        # leave the value unmodified (str)
-        pass
-    # _log("envvar=%s, value=%r, default_value=%r, "
-    #      "casted_to=%r" % (name, value, default_value, new_value))
-    return new_value
 
 
 # =============================================================================
@@ -528,11 +500,43 @@ class _Parser:
                     else key_name)
                 if check_name in env_names:
                     default_value = getattr(conf_class, key_name)
-                    new_value = env[key_name.upper()]
-                    new_value = parse_envvar(
-                        key_name, default_value, new_value)
+                    raw_value = env[key_name.upper()]
+                    new_value = self.cast_value(
+                        key_name, default_value, raw_value)
                     conf[key_name] = new_value
+                    _log("envvar=%s, value=%r, default_conf_value=%r, "
+                         "casted_to=%r" % (key_name.upper(), raw_value,
+                                           default_value, new_value))
         return conf
+
+    @staticmethod
+    def cast_value(name, default_value, new_value):
+        """Cast a value depending on default value type."""
+        if isinstance(default_value, schema):
+            default_value = default_value.default
+        if isinstance(default_value, bool):
+            if new_value.lower() in _BOOL_TRUE:
+                new_value = True
+            elif new_value.lower() in _BOOL_FALSE:
+                new_value = False
+            else:
+                raise TypesMismatchError(name, default_value, new_value)
+        elif isinstance(default_value, int):
+            try:
+                new_value = int(new_value)
+            except ValueError:
+                raise TypesMismatchError(name, default_value, new_value)
+        elif isinstance(default_value, float):
+            try:
+                new_value = float(new_value)
+            except ValueError:
+                raise TypesMismatchError(name, default_value, new_value)
+        else:
+            # leave the new value unmodified (str)
+            pass
+        # _log("envvar=%s, value=%r, default_value=%r, "
+        #      "casted_to=%r" % (name, value, default_value, new_value))
+        return new_value
 
     def process_conf(self, conf):
         conf_map = _conf_map.copy()
