@@ -193,8 +193,11 @@ def _log(s):
 
 def _has_multi_conf_classes():
     """Return True if more than one config class has been register()ed."""
-    with _lock_ctx():
-        return len(_conf_map) > 1
+    return len(_conf_map) > 1
+
+
+def _has_sectionless_conf():
+    return None in _conf_map
 
 
 @contextlib.contextmanager
@@ -391,7 +394,7 @@ def register(section=None):
             warnings.warn(msg, UserWarning)
             return lambda klass: add_metaclass(klass)
 
-        if None in _conf_map:
+        if _has_sectionless_conf():
             # There's a root section. Verify the new key does not
             # override any of the keys in the root section.
             root_conf_class = _conf_map.get(None)
@@ -417,7 +420,7 @@ def get_parsed_conf():
         conf_map = _conf_map.copy()
     ret = {}
     # root section
-    if None in conf_map:
+    if _has_sectionless_conf():
         conf_class = conf_map.pop(None)
         ret = dict(conf_class)
     # other sections
@@ -484,6 +487,9 @@ class _Parser:
                 except KeyError:
                     raise ValueError("don't know how to parse %r (extension "
                                      "not supported)" % file.name)
+                if ext == '.ini' and _has_sectionless_conf():
+                    raise Error("can't parse ini files if a sectionless "
+                                "configuration class has been registered")
             else:
                 parser = self.file_parser
             return parser(file) or {}

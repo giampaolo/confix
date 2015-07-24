@@ -630,6 +630,17 @@ class TestIni(BaseTestCase):
             assert config.foo == False  # NOQA
             discard()
 
+    def test_sectionless_conf(self):
+        @register()
+        class config:
+            foo = 1
+
+        self.write_to_file("")
+        self.assertRaisesRegexp(
+            Error,
+            "can't parse ini files if a sectionless configuration class",
+            parse, self.TESTFN)
+
 
 # ===================================================================
 # test validators
