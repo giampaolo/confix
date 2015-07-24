@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import textwrap
+import warnings
 # try:
 #     import configparser  # py3
 # except ImportError:
@@ -931,6 +932,27 @@ class TestRegister(BaseTestCase):
 
         assert "previously registered root class" in str(cm.exception)
         assert "already defines a key with the same name" in str(cm.exception)
+
+    def test_register_after_parse(self):
+        @register()
+        class config:
+            foo = 1
+
+        parse()
+
+        with warnings.catch_warnings(record=True) as ws:
+            @register(section="unparsed")
+            class unparsed_config:
+                bar = 1
+
+        assert len(ws) == 1
+        assert 'configuration class defined after parse' in \
+            ws[0].message.message
+        assert ws[0].category is UserWarning
+        # global conf will not include this
+        assert get_parsed_conf() == {'foo': 1}
+        # but it's still a magic object
+        assert dict(unparsed_config) == {'bar': 1}
 
 
 # ===================================================================

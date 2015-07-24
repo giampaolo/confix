@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import threading
+import warnings
 
 try:
     import configparser  # py3
@@ -373,31 +374,31 @@ def register(section=None):
     same for methods, classmethods or any other non-callable type.
     A class decoratored with this method becomes dict()-able.
     """
+    class meta_wrapper(type):
+
+        def __iter__(self):
+            # this will make the class dict()able
+            for k, v in inspect.getmembers(self):
+                if not k.startswith('_') and not inspect.isroutine(v):
+                    yield (k, v)
+
+        def __getitem__(self, key):
+            return getattr(self, key)
+
+        # XXX: it seems this is not necessary (why?)
+        # def __setitem__(self, key, value):
+        #     setattr(self, key, value)
+
+        def __delitem__(self, key):
+            delattr(self, key)
+
+        def __contains__(self, key):
+            return hasattr(self, key)
+
+        def __len__(self):
+            return len(dict(self))
+
     def add_metaclass(klass):
-        class meta_wrapper(type):
-
-            def __iter__(self):
-                # this will make the class dict()able
-                for k, v in inspect.getmembers(self):
-                    if not k.startswith('_') and not inspect.isroutine(v):
-                        yield (k, v)
-
-            def __getitem__(self, key):
-                return getattr(self, key)
-
-            # XXX: it seems this is not necessary (why?)
-            # def __setitem__(self, key, value):
-            #     setattr(self, key, value)
-
-            def __delitem__(self, key):
-                delattr(self, key)
-
-            def __contains__(self, key):
-                return hasattr(self, key)
-
-            def __len__(self):
-                return len(dict(self))
-
         name = klass.__name__
         bases = klass.__bases__
         # is this really necessary?
@@ -419,6 +420,14 @@ def register(section=None):
     with _lock_ctx():
         if section in _conf_map:
             raise AlreadyRegisteredError(section)
+
+        if _parsed:
+            msg = "configuration class defined after parse(); global " \
+                  "configuration will not reflect it and it will remain " \
+                  "unparsed"
+            warnings.warn(msg, UserWarning)
+            return lambda klass: add_metaclass(klass)
+
         if None in _conf_map:
             # There's a root section. Verify the new key does not
             # override any of the keys in the root section.
@@ -428,6 +437,7 @@ def register(section=None):
                     "attempting to register section %r when previously "
                     "registered root class %r already defines a key with the "
                     "same name" % (section, root_conf_class))
+
     return wrapper
 
 
