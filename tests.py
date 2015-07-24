@@ -962,6 +962,24 @@ class TestRegister(BaseTestCase):
 
 class TestMisc(BaseTestCase):
 
+    def test_mro(self):
+        # This method is automatically added by the meta class wrapper:
+        # https://docs.python.org/3/library/stdtypes.html#class.mro
+        # Make sure we can override it.
+        @register()
+        class config:
+            mro = 2
+
+        assert config.mro == 2
+
+        discard()
+
+        @register()
+        class config:
+            pass
+
+        config.mro
+
     def test__all__(self):
         dir_confix = dir(confix)
         for name in dir_confix:

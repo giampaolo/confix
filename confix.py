@@ -5,36 +5,6 @@ A language-agnostic configuration parser.
 Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
-# @register()
-# -----------
-# TODO: provide __repr__?
-# TODO: provide __dir__?
-# TODO: should we raise exception if config class has key starting with "_"
-#       instead of skipping it?
-# TODO: provide some kind of isinstance() check for @register()ed classes?
-# TODO: should we check class is not instantiated?
-# TODO: should we avoid instantiation in metaclass_wrapper
-#       (exception from __init__)?
-
-# parse()
-# -------
-# TODO: should we rollback() and reset _conf_map on validation error?
-# TODO: should parse() return get_parsed_conf()?
-# TODO: add _after_parse callback? (it's gonna be a class method)
-# TODO: add 'transformer' callable to schema?
-#       should it be executed before or after validate?
-#       should it be executed for the default value as well (probably not)?
-
-# parse_with_envvars()
-# --------------------
-# TODO: not happy with `case_sensitive` arg
-
-# schema()
-# --------
-# TODO: schema: figure out what do in case no default value is specified
-# TODO: move running of validation into schema (validate() method)
-
-
 import collections
 import contextlib
 import functools
