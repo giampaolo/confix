@@ -337,21 +337,40 @@ class BaseMixin(object):
         parse_with_envvars(self.TESTFN)
         assert config.foo == 6
 
-    def test_envvars_base_case_sensitive(self):
+    def test_envvars_case_sensitive(self):
         @register()
         class config:
             foo = 1
             bar = 2
-            apple = 3
+            APPLE = 3
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
-        os.environ['APPLE'] = '10'
-        parse_with_envvars(self.TESTFN, case_sensitive=True)
-        assert config.foo == 5
+        # non-uppercase env vars are supposed to be ignored
+        os.environ['FoO'] = '10'
+        os.environ['BAR'] = '20'
+        os.environ['APPLE'] = '30'
+        parse_with_envvars(case_sensitive=True)
+        assert config.foo == 1
         assert config.bar == 2
-        assert config.apple == 3
+        assert config.APPLE == 30
+
+    def test_envvars_case_insensitive(self):
+        @register()
+        class config:
+            foo = 1
+            bar = 2
+            APPLE = 3
+            PeAr = 4
+
+        # non-uppercase env vars are supposed to be ignored
+        os.environ['FoO'] = '10'
+        os.environ['BAR'] = '20'
+        os.environ['APPLE'] = '30'
+        os.environ['PEAR'] = '40'
+        parse_with_envvars(case_sensitive=False)
+        assert config.foo == 1
+        assert config.bar == 20
+        assert config.APPLE == 30
+        assert config.PeAr == 40
 
     def test_envvars_convert_type(self):
         @register()

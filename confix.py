@@ -519,19 +519,19 @@ class _Parser:
         """
         conf = {}
         conf_map = _conf_map.copy()
-        for section, conf_class in conf_map.items():
-            conf_class_names = set(conf_class.__dict__.keys())
-            if not self.envvar_case_sensitive:
-                conf_class_names = set([x.lower() for x in conf_class_names])
-
-            env = os.environ.copy()
-            for name, value in env.items():
-                if not self.envvar_case_sensitive:
-                    name = name.lower()
-                if name in conf_class_names:
-                    default_value = getattr(conf_class, name)
-                    value = parse_envvar(name, default_value, value)
-                    conf[name] = value
+        env = os.environ.copy()
+        env_names = set([x for x in env.keys() if x.isupper()])
+        for conf_class in conf_map.values():
+            for key_name in dict(conf_class).keys():
+                check_name = (
+                    key_name.upper() if not self.envvar_case_sensitive
+                    else key_name)
+                if check_name in env_names:
+                    default_value = getattr(conf_class, key_name)
+                    new_value = env[key_name.upper()]
+                    new_value = parse_envvar(
+                        key_name, default_value, new_value)
+                    conf[key_name] = new_value
         return conf
 
     def process_conf(self, conf):
