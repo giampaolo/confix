@@ -82,7 +82,7 @@ class ValidationError(Error):
     doesn't pass (callable return False).
 
     This can be used within your validator in order to throw custom
-    error messages (...and it's the only exception class which is
+    error messages.
     """
 
     def __init__(self, msg=None):
