@@ -32,6 +32,7 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # schema()
 # --------
 # TODO: schema: figure out what do in case no default value is specified
+# TODO: move running of validation into schema (validate() method)
 
 
 import collections
