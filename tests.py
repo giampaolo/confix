@@ -324,6 +324,19 @@ class BaseMixin(object):
         assert config.bar == 2
         assert config.apple == 10
 
+    def test_envvars_precendence_order(self):
+        # envvar should take precedence over conf file
+        @register()
+        class config:
+            foo = 1
+
+        self.dict_to_file(
+            dict(foo=5)
+        )
+        os.environ['FOO'] = '6'
+        parse_with_envvars(self.TESTFN)
+        assert config.foo == 6
+
     def test_envvars_base_case_sensitive(self):
         @register()
         class config:
