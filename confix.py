@@ -219,12 +219,9 @@ def _lock_ctx():
 
 def istrue(value):
     """Assert value evaluates to True."""
-    try:
-        assert bool(value)
-    except AssertionError:
+    if not bool(value):
         raise ValidationError("bool(%r) evaluates to False" % value)
-    else:
-        return True
+    return True
 
 
 def isin(seq):
