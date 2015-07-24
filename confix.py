@@ -595,13 +595,14 @@ class _Parser:
         setattr(conf_class, key, new_value)
 
     def check_type(self, section, key, default_value, new_value):
+        """Raise TypesMismatchError if config file or env var wants to
+        override a key with a type which is different than the original
+        one defined in the conf class.
+        """
         doit = (self.type_check and
                 default_value is not None and
                 new_value is not None)
         if doit and type(new_value) != type(default_value):
-            # Config file overrides a key with a type which is
-            # different than the original one defined in the
-            # conf class.
             if (not _PY3 and
                     isinstance(new_value, basestring) and
                     isinstance(default_value, basestring)):
@@ -614,13 +615,15 @@ class _Parser:
 
     @staticmethod
     def run_validators(schema_, section, key, new_value):
+        """Run schema validators and raise ValidationError on failure."""
         validators = schema_.validator
         if not isinstance(validators, collections.Iterable):
             validators = [validators]
         for validator in validators:
             exc = None
+            sec_key = key if section is None else "%s.%s" % (section, key)
             _log("running validator %r for key %r with value "
-                 "%r".format(validator, key, new_value))
+                 "%r".format(validator, sec_key, new_value))
             try:
                 ok = validator(new_value)
             except ValidationError as err:
