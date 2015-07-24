@@ -969,6 +969,13 @@ class TestRegister(BaseTestCase):
         # but it's still a magic object
         assert dict(unparsed_config) == {'bar': 1}
 
+    def test_invalid_section_type(self):
+        # this also serves as a test for
+        with self.assertRaises(TypeError):
+            @register(section=1)
+            class config:
+                foo = 1
+
 
 # ===================================================================
 # misc tests

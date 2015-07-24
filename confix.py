@@ -401,6 +401,9 @@ def register(section=None):
                     "registered root class %r already defines a key with the "
                     "same name" % (section, root_conf_class))
 
+    if section is not None and not isinstance(section, basestring):
+        raise TypeError("invalid section; expected either string or None, "
+                        "got %r" % section)
     return wrapper
 
 
@@ -489,7 +492,7 @@ class _Parser:
         """Iterate over all process env vars and return a dict() of
         env vars whose name match they keys defined by conf class.
         """
-        conf = {}
+        ret = {}
         conf_map = _conf_map.copy()
         env = os.environ.copy()
         env_names = set([x for x in env.keys() if x.isupper()])
@@ -503,11 +506,11 @@ class _Parser:
                     raw_value = env[key_name.upper()]
                     new_value = self.cast_value(
                         key_name, default_value, raw_value)
-                    conf[key_name] = new_value
+                    ret[key_name] = new_value
                     _log("envvar=%s, value=%r, default_conf_value=%r, "
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
-        return conf
+        return ret
 
     @staticmethod
     def cast_value(name, default_value, new_value):
