@@ -560,12 +560,10 @@ class TestIni(BaseTestCase):
         with open(self.TESTFN, 'w') as f:
             f.write(content)
 
-    # XXX: should this test be common to all formats?
-    def test_int_ok(self):
+    def test_type_int(self):
         @register('name')
         class config:
             foo = 1
-            bar = 2
 
         self.write_to_file(textwrap.dedent("""
             [name]
@@ -574,24 +572,22 @@ class TestIni(BaseTestCase):
         parse(self.TESTFN)
         assert config.foo == 9
 
-    # XXX: should this test be common to all formats?
-    def test_int_ko(self):
+    def test_type_str(self):
         @register('name')
         class config:
-            foo = 1
-            bar = 2
+            foo = 'foo'
 
         self.write_to_file(textwrap.dedent("""
             [name]
-            foo = '9'
+            foo = bar
         """))
-        self.assertRaises(TypesMismatchError, parse, self.TESTFN)
+        parse(self.TESTFN)
+        assert config.foo == 'bar'
 
-    def test_float(self):
+    def test_type_float(self):
         @register('name')
         class config:
             foo = 1.1
-            bar = 2
 
         self.write_to_file(textwrap.dedent("""
             [name]
@@ -600,7 +596,8 @@ class TestIni(BaseTestCase):
         parse(self.TESTFN)
         assert config.foo == 1.3
 
-    def test_true(self):
+    # TODO: this test is broken
+    def test_type_true(self):
         true_values = ("1", "yes", "true", "on")
         for value in true_values:
             @register('name')
@@ -616,7 +613,8 @@ class TestIni(BaseTestCase):
             assert config.foo == True  # NOQA
             discard()
 
-    def test_false(self):
+    # TODO: this test is broken
+    def test_type_false(self):
         true_values = ("0", "no", "false", "off")
         for value in true_values:
             @register('name')
