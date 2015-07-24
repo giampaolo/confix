@@ -416,21 +416,21 @@ def register(section=None):
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         with _lock_ctx():
             klass = add_metaclass(klass)
-            if None in _conf_map:
-                # There's a root section. Verify the new key does not
-                # override any of the keys of the root section.
-                root_conf_class = _conf_map.get(None)
-                if section in root_conf_class:
-                    raise Error(
-                        "attempting to register section %r when previously "
-                        "registered root class %r already defines a key "
-                        "with the same name" % (section, root_conf_class))
             _conf_map[section] = klass
         return klass
 
     with _lock_ctx():
         if section in _conf_map:
             raise AlreadyRegisteredError(section)
+        if None in _conf_map:
+            # There's a root section. Verify the new key does not
+            # override any of the keys in the root section.
+            root_conf_class = _conf_map.get(None)
+            if section in root_conf_class:
+                raise Error(
+                    "attempting to register section %r when previously "
+                    "registered root class %r already defines a key with the "
+                    "same name" % (section, root_conf_class))
     return wrapper
 
 
