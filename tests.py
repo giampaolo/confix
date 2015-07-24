@@ -719,23 +719,6 @@ class TestParse(BaseTestCase):
 
 
 # ===================================================================
-# parse_with_envvar() tests
-# ===================================================================
-
-
-class TestParseWithEnvvars(BaseTestCase):
-
-    def test_translators_not_callable(self):
-        self.assertRaises(TypeError, parse_with_envvars, name_translator=1)
-        self.assertRaises(TypeError, parse_with_envvars, value_translator=1)
-
-    def test_envvar_parser_not_callable(self):
-        with self.assertRaises(TypeError) as cm:
-            parse_with_envvars(envvar_parser=1)
-        assert "not a callable" in str(cm.exception)
-
-
-# ===================================================================
 # schema() tests
 # ===================================================================
 

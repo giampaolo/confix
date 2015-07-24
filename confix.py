@@ -454,8 +454,7 @@ def get_parsed_conf():
 class _Parser:
 
     def __init__(self, conf_file=None, file_parser=None, type_check=True,
-                 parse_envvars=False, envvar_case_sensitive=False,
-                 envvar_parser=None):
+                 parse_envvars=False, envvar_case_sensitive=False):
         """Do all the work."""
         global _parsed
         if _parsed:
@@ -465,12 +464,6 @@ class _Parser:
         self.type_check = type_check
         self.parse_envvars = parse_envvars
         self.envvar_case_sensitive = envvar_case_sensitive
-        self.envvar_parser = envvar_parser
-        if self.envvar_parser is None:
-            self.envvar_parser = parse_envvar
-        else:
-            if not callable(envvar_parser):
-                raise TypeError("envvar_parser is not a callable")
 
         conf = self.get_conf_from_file()
         if parse_envvars:
@@ -537,7 +530,7 @@ class _Parser:
                     name = name.lower()
                 if name in conf_class_names:
                     default_value = getattr(conf_class, name)
-                    value = self.envvar_parser(name, value, default_value)
+                    value = parse_envvar(name, value, default_value)
                     conf[name] = value
         return conf
 
@@ -687,7 +680,7 @@ def parse(conf_file=None, file_parser=None, type_check=True):
 
 
 def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
-                       case_sensitive=False, envvar_parser=None):
+                       case_sensitive=False):
     """Same as parse() but also takes environment variables into account.
     The order of precedence is:
 
@@ -696,21 +689,13 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
     - (bool) case_sensitive: if `False` env var 'FOO' and 'foo' will be
       the treated the same and will override config class' key 'foo'
       (also tread case in a case insensitive manner).
-
-    - (callable) envvar_parser: a callable which is used to convert
-      each environment variable value found.
-      If a name match is found this function will receive the env var
-      name, value and default value (as defined by config class.
-      If config class value is an int, float or bool the value will be
-      changed in accordance.
     """
     with _lock_ctx():
         _Parser(conf_file=conf_file,
                 file_parser=file_parser,
                 type_check=type_check,
                 parse_envvars=True,
-                envvar_case_sensitive=case_sensitive,
-                envvar_parser=envvar_parser)
+                envvar_case_sensitive=case_sensitive)
 
 
 def discard():

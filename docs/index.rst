@@ -101,19 +101,14 @@ API reference
     an option specified in the configuration file has a different type than the
     one defined in the configuration class.
 
-.. function:: confix.parse_with_envvars(conf_file=None, file_parser=None, type_check=True, case_sensitive=False, envvar_parser=None)
+.. function:: confix.parse_with_envvars(conf_file=None, file_parser=None, type_check=True, case_sensitive=False)
 
     Same as :func:`confix.parse()` but also takes environment variables into
     account.
     If an environment variable name matches a key of the config class that
-    will replaced with the environment variable value which will be converted
-    by *envvar_parser* function first.
+    will replaced with the environment variable value.
     If *case_sensitive* is ``False`` env var ``"FOO"`` and ``"foo"`` will be
     the treated the same and will override config class' key ``"foo"``.
-    *envvar_parser* is the callable which converts the environment variable
-    value (which is always a string) based on the default value type defined
-    in the config class (e.g. if ``config.foo`` is a float the environment
-    variable value will be casted to a float.
     If *conf_file* is specified also a configuration file will be parsed but
     the environment variables will take precedence as in:
     ``environment variable -> config file -> config class default value``.
@@ -352,7 +347,7 @@ shell:
       File "main.py", line 9, in <module>
         parse_with_envvars('config.yaml')
       File "/home/giampaolo/svn/confix/confix.py", line 501, in parse_with_envvars
-        envvar_parser=envvar_parser)
+        envvar_case_sensitive=case_sensitive)
       File "/home/giampaolo/svn/confix/confix.py", line 291, in __init__
         self.process_conf(conf)
       File "/home/giampaolo/svn/confix/confix.py", line 382, in process_conf
@@ -397,7 +392,7 @@ shell:
       File "main.py", line 9, in <module>
         parse_with_envvars()
       File "/home/giampaolo/svn/confix/confix.py", line 501, in parse_with_envvars
-        envvar_parser=envvar_parser)
+        envvar_case_sensitive=case_sensitive)
       File "/home/giampaolo/svn/confix/confix.py", line 291, in __init__
         self.process_conf(conf)
       File "/home/giampaolo/svn/confix/confix.py", line 380, in process_conf
