@@ -305,32 +305,32 @@ def parse_ini(file):
     return ret
 
 
-def parse_envvar(name, value, default_value):
+def parse_envvar(name, default_value, new_value):
     if isinstance(default_value, schema):
         default_value = default_value.default
     if isinstance(default_value, bool):
-        if value.lower() in _BOOL_TRUE:
-            value = True
-        elif value.lower() in _BOOL_FALSE:
-            value = False
+        if new_value.lower() in _BOOL_TRUE:
+            new_value = True
+        elif new_value.lower() in _BOOL_FALSE:
+            new_value = False
         else:
-            raise TypesMismatchError(name, default_value, value)
+            raise TypesMismatchError(name, default_value, new_value)
     elif isinstance(default_value, int):
         try:
-            value = int(value)
+            new_value = int(new_value)
         except ValueError:
-            raise TypesMismatchError(name, default_value, value)
+            raise TypesMismatchError(name, default_value, new_value)
     elif isinstance(default_value, float):
         try:
-            value = float(value)
+            new_value = float(new_value)
         except ValueError:
-            raise TypesMismatchError(name, default_value, value)
+            raise TypesMismatchError(name, default_value, new_value)
     else:
         # leave the value unmodified (str)
         pass
-    _log("envvar=%s, value=%r, default_value=%r, "
-         "casted_to=%r" % (name, value, default_value, value))
-    return value
+    # _log("envvar=%s, value=%r, default_value=%r, "
+    #      "casted_to=%r" % (name, value, default_value, new_value))
+    return new_value
 
 
 # =============================================================================
@@ -530,7 +530,7 @@ class _Parser:
                     name = name.lower()
                 if name in conf_class_names:
                     default_value = getattr(conf_class, name)
-                    value = parse_envvar(name, value, default_value)
+                    value = parse_envvar(name, default_value, value)
                     conf[name] = value
         return conf
 
