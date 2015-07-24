@@ -919,6 +919,19 @@ class TestRegister(BaseTestCase):
         assert 'register decorator is supposed to be used against a class' in \
             str(cm.exception)
 
+    def test_override_root_section_key(self):
+        @register()
+        class root:
+            foo = 1
+
+        with self.assertRaises(Error) as cm:
+            @register(section="foo")
+            class sub:
+                bar = 2
+
+        assert "previously registered root class" in str(cm.exception)
+        assert "already defines a key with the same name" in str(cm.exception)
+
 
 # ===================================================================
 # misc tests

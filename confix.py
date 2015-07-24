@@ -9,9 +9,8 @@ Currently supports YAML, JSON, INI and TOML serialization formats.
 # TODO: @register __dir__?
 # TODO: should we raise exception if config class has key starting with "_"
 #       instead of skipping it?
+# TODO: should we rollback() and reset _conf_map on validation error?
 # TODO: should parse() return get_parsed_conf()?
-# TODO: when using multiple conf classes raise exception if a sub section
-#       overrides a root key
 # TODO: add 'transformer' callable to schema
 # TODO: schema: figure out what do in case no default value is specified
 
@@ -417,6 +416,15 @@ def register(section=None):
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         with _lock_ctx():
             klass = add_metaclass(klass)
+            if None in _conf_map:
+                # There's a root section. Verify the new key does not
+                # override any of the keys of the root section.
+                root_conf_class = _conf_map.get(None)
+                if section in root_conf_class:
+                    raise Error(
+                        "attempting to register section %r when previously "
+                        "registered root class %r already defines a key "
+                        "with the same name" % (section, root_conf_class))
             _conf_map[section] = klass
         return klass
 
