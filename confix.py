@@ -577,15 +577,28 @@ class _Parser:
             # conf class.
             raise UnrecognizedKeyError(key, new_value, section=section)
 
+        # Look for type mismatch.
         is_schema = isinstance(default_value, schema)
-        # TODO: perhpas "not is_schema" is not necessary
-        check_type = (
-            self.type_check and
-            not is_schema and
-            default_value is not None and
-            new_value is not None
-        )
-        if check_type and type(new_value) != type(default_value):
+        if not is_schema:
+            self.check_type(section, key, default_value, new_value)
+
+        # Run validators.
+        if is_schema:
+            schema_ = default_value
+            if schema_.validator is not None:
+                self.run_validators(schema_, section, key, new_value)
+
+        # Finally replace key value.
+        sec_key = key if section is None else "%s.%s" % (section, key)
+        _log("overriding key %r (value=%r) to new value %r".format(
+            sec_key, default_value, new_value))
+        setattr(conf_class, key, new_value)
+
+    def check_type(self, section, key, default_value, new_value):
+        doit = (self.type_check and
+                default_value is not None and
+                new_value is not None)
+        if doit and type(new_value) != type(default_value):
             # Config file overrides a key with a type which is
             # different than the original one defined in the
             # conf class.
@@ -598,14 +611,6 @@ class _Parser:
             else:
                 raise TypesMismatchError(key, default_value, new_value,
                                          section=section)
-
-        if is_schema and default_value.validator is not None:
-            schema_ = default_value
-            self.run_validators(schema_, section, key, new_value)
-
-        _log("overring key %r (value=%r) to new value %r".format(
-            key, getattr(conf_class, key), new_value))
-        setattr(conf_class, key, new_value)
 
     @staticmethod
     def run_validators(schema_, section, key, new_value):
