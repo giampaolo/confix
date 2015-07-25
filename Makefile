@@ -45,12 +45,12 @@ setup-dev-env: install-git-hooks
 		unittest2
 
 install:
-	$(PYTHON) setup.py install --user
+	$(PYTHON) setup.py develop --user
 
 uninstall:
 	cd ..; $(PYTHON) -m pip uninstall -y -v confix
 
-test: install
+test:
 	$(PYTHON) -m pytest -s -v $(TSCRIPT)
 
 # Run a specific test by name; e.g. "make test-by-name register" will run

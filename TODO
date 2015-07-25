@@ -36,9 +36,13 @@ Generic
 
 - provde a way to pass (and parse) a dict object?
 
+Tests
+=====
+
+- for section == ""
+
 Corner cases
 ============
 
 - by default @register attachs a 'mro' attribute to the class; despite this
   can be overridden it would be nice to remove it somehow.
-

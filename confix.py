@@ -502,7 +502,7 @@ class _Parser:
         conf_map = _conf_map.copy()
         env = os.environ.copy()
         env_names = set([x for x in env.keys() if x.isupper()])
-        for conf_class in conf_map.values():
+        for section, conf_class in conf_map.items():
             for key_name in dict(conf_class).keys():
                 check_name = (
                     key_name.upper() if not self.envvar_case_sensitive
@@ -512,7 +512,12 @@ class _Parser:
                     raw_value = env[key_name.upper()]
                     new_value = self.cast_value(
                         key_name, default_value, raw_value)
-                    ret[key_name] = new_value
+                    if section is None:
+                        ret[key_name] = new_value
+                    else:
+                        if section not in ret:
+                            ret[section] = {}
+                        ret[section][key_name] = new_value
                     _log("envvar=%s, value=%r, default_conf_value=%r, "
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
@@ -561,8 +566,9 @@ class _Parser:
                 # "new_value" in this case is actually a dict of sub-section
                 # items.
                 conf_class = conf_map[key]
+                # TODO: turn this into a proper error
                 assert isinstance(new_value, dict), new_value
-                assert new_value, new_value
+                # assert new_value, new_value
                 for k, nv in new_value.items():
                     self.process_pair(k, nv, conf_class, section=key)
             else:

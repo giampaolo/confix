@@ -77,6 +77,14 @@ class BaseMixin(object):
     TESTFN = None
     section = None
 
+    def setUp(self):
+        super(BaseMixin, self).setUp()
+        self.original_section = self.section
+
+    def tearDown(self):
+        super(BaseMixin, self).tearDown()
+        self.section = self.original_section
+
     # --- utils
 
     def dict_to_file(self, dct):
@@ -310,6 +318,8 @@ class BaseMixin(object):
     # --- test parse_with_envvars
 
     def test_envvars_base(self):
+        self.section = None
+
         @register(self.section)
         class config:
             foo = 1
@@ -441,6 +451,8 @@ class BaseMixin(object):
     def test_multisection_multiple(self):
         # Define two configuration classes, control them via a single
         # conf file defining separate sections.
+        self.section = None
+
         @register('ftp')
         class ftp_config:
             port = 21
@@ -464,6 +476,8 @@ class BaseMixin(object):
     def test_multisection_invalid_section(self):
         # Config file define a section which is not defined in config
         # class.
+        self.section = None
+
         @register('ftp')
         class config:
             port = 21
@@ -481,6 +495,8 @@ class BaseMixin(object):
     def test_multisection_unrecognized_key(self):
         # Config file define a section key which is not defined in config
         # class.
+        self.section = None
+
         @register('ftp')
         class config:
             port = 21
@@ -501,29 +517,55 @@ class BaseMixin(object):
 # ===================================================================
 
 
+# yaml
+
 @unittest.skipUnless(yaml is not None, "yaml module is not installed")
 class TestYamlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.yaml'
 
     def dict_to_file(self, dct):
+        if self.section:
+            dct = {self.section: dct}
         s = yaml.dump(dct, default_flow_style=False)
         self.write_to_file(s)
 
+
+@unittest.skipUnless(yaml is not None, "yaml module is not installed")
+class TestYamlWithSectionMixin(TestYamlMixin):
+    section = 'name'
+
+
+# json
 
 class TestJsonMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.json'
 
     def dict_to_file(self, dct):
+        if self.section:
+            dct = {self.section: dct}
         self.write_to_file(json.dumps(dct))
 
+
+class TestJsonWithSectionMixin(TestJsonMixin):
+    section = 'name'
+
+
+# toml
 
 @unittest.skipUnless(toml is not None, "toml module is not installed")
 class TestTomlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.toml'
 
     def dict_to_file(self, dct):
+        if self.section:
+            dct = {self.section: dct}
         s = toml.dumps(dct)
         self.write_to_file(s)
+
+
+@unittest.skipUnless(toml is not None, "toml module is not installed")
+class TestTomWithSectionlMixin(TestTomlMixin):
+    section = 'name'
 
 
 # TODO: see what to do with root section and re-enable this
