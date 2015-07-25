@@ -42,6 +42,8 @@ __license__ = 'MIT'
 version_info = tuple([int(num) for num in __version__.split('.')])
 
 _PY3 = sys.version_info >= (3, )
+# TODO: these are currently treated as case-insensitive; instead we should
+# do "True", "TRUE" etc and ignore "TrUe".
 _BOOL_TRUE = set(("1", "yes", "true", "on"))
 _BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")

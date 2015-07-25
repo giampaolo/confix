@@ -611,84 +611,6 @@ class TestEnvVarsMixin(BaseMixin, BaseTestCase):
 class TestIni(BaseTestCase):
     TESTFN = TESTFN + '.ini'
 
-    def tearDown(self):
-        discard()
-        safe_remove(self.TESTFN)
-
-    def write_to_file(self, content):
-        with open(self.TESTFN, 'w') as f:
-            f.write(content)
-
-    def test_type_int(self):
-        @register('name')
-        class config:
-            foo = 1
-
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = 9
-        """))
-        self.parse(self.TESTFN)
-        assert config.foo == 9
-
-    def test_type_str(self):
-        @register('name')
-        class config:
-            foo = 'foo'
-
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = bar
-        """))
-        self.parse(self.TESTFN)
-        assert config.foo == 'bar'
-
-    def test_type_float(self):
-        @register('name')
-        class config:
-            foo = 1.1
-
-        self.write_to_file(textwrap.dedent("""
-            [name]
-            foo = 1.3
-        """))
-        self.parse(self.TESTFN)
-        assert config.foo == 1.3
-
-    # # TODO: this test is broken
-    # def test_type_true(self):
-    #     true_values = ("1", "yes", "true", "on")
-    #     for value in true_values:
-    #         @register('name')
-    #         class config:
-    #             foo = None
-    #             bar = 2
-
-    #         self.write_to_file(textwrap.dedent("""
-    #             [name]
-    #             foo = %s
-    #         """ % (value)))
-    #         self.parse(self.TESTFN)
-    #         assert config.foo == True  # NOQA
-    #         discard()
-
-    # # TODO: this test is broken
-    # def test_type_false(self):
-    #     true_values = ("0", "no", "false", "off")
-    #     for value in true_values:
-    #         @register('name')
-    #         class config:
-    #             foo = None
-    #             bar = 2
-
-    #         self.write_to_file(textwrap.dedent("""
-    #             [name]
-    #             foo = %s
-    #         """ % (value)))
-    #         self.parse(self.TESTFN)
-    #         assert config.foo == False  # NOQA
-    #         discard()
-
     def test_sectionless_conf(self):
         @register()
         class config:
@@ -699,6 +621,36 @@ class TestIni(BaseTestCase):
             Error,
             "can't parse ini files if a sectionless configuration class",
             parse, self.TESTFN)
+
+    # TODO: also test case-sensitiveness of these values
+    def test_ini_true_type(self):
+        for value in ("1", "yes", "true", "on"):
+            @register('name')
+            class config:
+                foo = False
+
+            self.write_to_file(textwrap.dedent("""
+                [name]
+                foo = %s
+            """ % (value)))
+            self.parse(self.TESTFN)
+            assert config.foo is True
+            discard()
+
+    # TODO: also test case-sensitiveness of these values
+    def test_ini_false_type(self):
+        for value in ("0", "no", "false", "off"):
+            @register('name')
+            class config:
+                foo = True
+
+            self.write_to_file(textwrap.dedent("""
+                [name]
+                foo = %s
+            """ % (value)))
+            self.parse(self.TESTFN)
+            assert config.foo is False
+            discard()
 
 
 # ===================================================================
