@@ -401,24 +401,6 @@ class BaseMixin(object):
         assert config.APPLE == 30
         assert config.PeAr == 40
 
-    def test_envvars_convert_type(self):
-        @register(self.section)
-        class config:
-            some_int = 1
-            some_float = 1.0
-            some_true_bool = True
-            some_false_bool = True
-
-        os.environ['SOME_INT'] = '2'
-        os.environ['SOME_FLOAT'] = '2.0'
-        os.environ['SOME_TRUE_BOOL'] = 'false'
-        os.environ['SOME_FALSE_BOOL'] = 'true'
-        parse_with_envvars()
-        assert config.some_int == 2
-        assert config.some_float == 2.0
-        assert config.some_true_bool is False
-        assert config.some_false_bool is True
-
     def test_envvars_convert_type_w_schema(self):
         @register(self.section)
         class config:
