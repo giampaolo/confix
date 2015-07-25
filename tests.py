@@ -313,8 +313,6 @@ class BaseMixin(object):
     # --- test parse_with_envvars
 
     def test_envvars_base(self):
-        self.section = None
-
         @register(self.section)
         class config:
             foo = 1

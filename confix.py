@@ -440,14 +440,12 @@ class _Parser:
         self.conf_file = conf_file
         self.file_parser = file_parser
         self.type_check = type_check
-        self.parse_envvars = parse_envvars
         self.envvar_case_sensitive = envvar_case_sensitive
 
-        conf = self.get_conf_from_file()
+        self.new_conf = self.get_conf_from_file()
         if parse_envvars:
-            # Note: env vars take precedence over config file.
-            conf.update(self.get_conf_from_env())
-        self.process_conf(conf)
+            self.update_conf_from_envvars()
+        self.process_conf(self.new_conf)
         _parsed = True
 
     def get_conf_from_file(self):
@@ -494,11 +492,10 @@ class _Parser:
                 parser = self.file_parser
             return parser(file) or {}
 
-    def get_conf_from_env(self):
+    def update_conf_from_envvars(self):
         """Iterate over all process env vars and return a dict() of
         env vars whose name match they keys defined by conf class.
         """
-        ret = {}
         conf_map = _conf_map.copy()
         env = os.environ.copy()
         env_names = set([x for x in env.keys() if x.isupper()])
@@ -513,15 +510,15 @@ class _Parser:
                     new_value = self.cast_value(
                         key_name, default_value, raw_value)
                     if section is None:
-                        ret[key_name] = new_value
+                        self.new_conf[key_name] = new_value
                     else:
-                        if section not in ret:
-                            ret[section] = {}
-                        ret[section][key_name] = new_value
+                        if section not in self.new_conf:
+                            self.new_conf[section] = {}
+                        self.new_conf[section][key_name] = new_value
+
                     _log("envvar=%s, value=%r, default_conf_value=%r, "
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
-        return ret
 
     @staticmethod
     def cast_value(name, default_value, new_value):
