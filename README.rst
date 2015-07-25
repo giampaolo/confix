@@ -101,4 +101,4 @@ Main features
 Status
 ------
 
-Still beta, especially ini file support.
+Still beta.

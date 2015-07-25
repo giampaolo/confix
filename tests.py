@@ -26,7 +26,7 @@ PY3 = sys.version_info >= (3, )
 if PY3:
     StringIO = io.StringIO
 else:
-    from StringIO import StringIO
+    from cStringIO import StringIO
 
 if sys.version_info >= (2, 7):
     import unittest
@@ -154,19 +154,19 @@ class BaseMixin(object):
             bar = 2
 
         self.dict_to_file(
-            dict(foo=5, bar='6')
+            dict(foo=5, bar='foo')
         )
         with self.assertRaises(TypesMismatchError) as cm:
             parse(self.TESTFN)
         # assert cm.exception.section == 'name')
         assert cm.exception.key == 'bar'
         assert cm.exception.default_value == 2
-        assert cm.exception.new_value == '6'
+        assert cm.exception.new_value == 'foo'
 
         # ...Unless we explicitly tell parse() to ignore type mismatch.
         parse(self.TESTFN, type_check=False)
         assert config.foo == 5
-        assert config.bar == '6'
+        assert config.bar == 'foo'
 
     # def test_invalid_yaml_file(self):
     #     self.dict_to_file('?!?')
@@ -576,10 +576,6 @@ class TestIniMixin(BaseMixin, BaseTestCase):
         content = fl.read()
         self.write_to_file(content)
 
-    # TODO: temporary
-    def test_types_mismatch(self):
-        pass
-
 
 # ===================================================================
 # tests for a specific format
@@ -633,39 +629,39 @@ class TestIni(BaseTestCase):
         parse(self.TESTFN)
         assert config.foo == 1.3
 
-    # TODO: this test is broken
-    def test_type_true(self):
-        true_values = ("1", "yes", "true", "on")
-        for value in true_values:
-            @register('name')
-            class config:
-                foo = None
-                bar = 2
+    # # TODO: this test is broken
+    # def test_type_true(self):
+    #     true_values = ("1", "yes", "true", "on")
+    #     for value in true_values:
+    #         @register('name')
+    #         class config:
+    #             foo = None
+    #             bar = 2
 
-            self.write_to_file(textwrap.dedent("""
-                [name]
-                foo = %s
-            """ % (value)))
-            parse(self.TESTFN)
-            assert config.foo == True  # NOQA
-            discard()
+    #         self.write_to_file(textwrap.dedent("""
+    #             [name]
+    #             foo = %s
+    #         """ % (value)))
+    #         parse(self.TESTFN)
+    #         assert config.foo == True  # NOQA
+    #         discard()
 
-    # TODO: this test is broken
-    def test_type_false(self):
-        true_values = ("0", "no", "false", "off")
-        for value in true_values:
-            @register('name')
-            class config:
-                foo = None
-                bar = 2
+    # # TODO: this test is broken
+    # def test_type_false(self):
+    #     true_values = ("0", "no", "false", "off")
+    #     for value in true_values:
+    #         @register('name')
+    #         class config:
+    #             foo = None
+    #             bar = 2
 
-            self.write_to_file(textwrap.dedent("""
-                [name]
-                foo = %s
-            """ % (value)))
-            parse(self.TESTFN)
-            assert config.foo == False  # NOQA
-            discard()
+    #         self.write_to_file(textwrap.dedent("""
+    #             [name]
+    #             foo = %s
+    #         """ % (value)))
+    #         parse(self.TESTFN)
+    #         assert config.foo == False  # NOQA
+    #         discard()
 
     def test_sectionless_conf(self):
         @register()

@@ -289,20 +289,6 @@ def parse_ini(file):
     for section, values in config._sections.items():
         ret[section] = {}
         for key, value in values.items():
-            value_stripped = value.strip()
-            if value.isdigit():
-                value = int(value)
-            elif value_stripped in _BOOL_TRUE:
-                value = True
-            elif value_stripped in _BOOL_FALSE:
-                value = False
-            else:
-                # guard against float('inf') which returns 'infinite'
-                if value_stripped != 'inf':
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        pass
             ret[section][key] = value
         ret[section].pop('__name__', None)
     return ret
@@ -441,6 +427,7 @@ class _Parser:
         self.file_parser = file_parser
         self.type_check = type_check
         self.envvar_case_sensitive = envvar_case_sensitive
+        self.file_ext = False
 
         self.new_conf = self.get_conf_from_file()
         if parse_envvars:
@@ -473,19 +460,18 @@ class _Parser:
                     '.yml': parse_yaml,
                     '.toml': parse_toml,
                     '.json': parse_json,
-                    '.ini': parse_ini  # TODO
-                    }
+                    '.ini': parse_ini}
             if self.file_parser is None:
                 if not hasattr(file, 'name'):
                     raise Error("can't determine file format from a file "
                                 "object with no 'name' attribute")
                 try:
-                    ext = os.path.splitext(file.name)[1]
-                    parser = pmap[ext]
+                    self.file_ext = os.path.splitext(file.name)[1]
+                    parser = pmap[self.file_ext]
                 except KeyError:
                     raise ValueError("don't know how to parse %r (extension "
                                      "not supported)" % file.name)
-                if ext == '.ini' and _has_sectionless_conf():
+                if self.file_ext == '.ini' and _has_sectionless_conf():
                     raise Error("can't parse ini files if a sectionless "
                                 "configuration class has been registered")
             else:
@@ -520,8 +506,7 @@ class _Parser:
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
 
-    @staticmethod
-    def cast_value(name, default_value, new_value):
+    def cast_value(self, name, default_value, new_value):
         """Cast a value depending on default value type."""
         if isinstance(default_value, schema):
             default_value = default_value.default
@@ -531,17 +516,20 @@ class _Parser:
             elif new_value.lower() in _BOOL_FALSE:
                 new_value = False
             else:
-                raise TypesMismatchError(name, default_value, new_value)
+                if self.type_check:
+                    raise TypesMismatchError(name, default_value, new_value)
         elif isinstance(default_value, int):
             try:
                 new_value = int(new_value)
             except ValueError:
-                raise TypesMismatchError(name, default_value, new_value)
+                if self.type_check:
+                    raise TypesMismatchError(name, default_value, new_value)
         elif isinstance(default_value, float):
             try:
                 new_value = float(new_value)
             except ValueError:
-                raise TypesMismatchError(name, default_value, new_value)
+                if self.type_check:
+                    raise TypesMismatchError(name, default_value, new_value)
         else:
             # leave the new value unmodified (str)
             pass
@@ -591,6 +579,10 @@ class _Parser:
             # Conf file defines a key which does not exist in the
             # conf class.
             raise UnrecognizedKeyError(key, new_value, section=section)
+
+        # Cast values for ini files (which only support string type).
+        if self.file_ext == '.ini':
+            new_value = self.cast_value(key, default_value, new_value)
 
         # Look for type mismatch.
         is_schema = isinstance(default_value, schema)

@@ -41,6 +41,12 @@ Tests
 
 - for section == ""
 
+Others
+======
+
+- make _BOOL_TRUE and _BOOL_FALSE public and documented (rename to
+  TRUE_BOOL_STRINGS and FALSE_BOOL_STRINGS or something)?
+
 Corner cases
 ============
 
