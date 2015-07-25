@@ -11,6 +11,9 @@ import warnings
 # except ImportError:
 #     import ConfigParser as configparser
 
+import toml  # requires "pip install toml"
+import yaml  # requires "pip install pyyaml"
+
 import confix
 from confix import Error, UnrecognizedKeyError, RequiredKeyError
 from confix import istrue, isin, isnotin, isemail, get_parsed_conf
@@ -18,14 +21,6 @@ from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
 from confix import ValidationError, AlreadyRegisteredError
 
-try:
-    import toml
-except ImportError:
-    toml = None
-try:
-    import yaml
-except ImportError:
-    yaml = None
 
 PY3 = sys.version_info >= (3, )
 # if PY3:
@@ -519,7 +514,6 @@ class BaseMixin(object):
 
 # yaml
 
-@unittest.skipUnless(yaml is not None, "yaml module is not installed")
 class TestYamlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.yaml'
 
@@ -530,7 +524,6 @@ class TestYamlMixin(BaseMixin, BaseTestCase):
         self.write_to_file(s)
 
 
-@unittest.skipUnless(yaml is not None, "yaml module is not installed")
 class TestYamlWithSectionMixin(TestYamlMixin):
     section = 'name'
 
@@ -552,7 +545,6 @@ class TestJsonWithSectionMixin(TestJsonMixin):
 
 # toml
 
-@unittest.skipUnless(toml is not None, "toml module is not installed")
 class TestTomlMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + '.toml'
 
@@ -563,7 +555,6 @@ class TestTomlMixin(BaseMixin, BaseTestCase):
         self.write_to_file(s)
 
 
-@unittest.skipUnless(toml is not None, "toml module is not installed")
 class TestTomWithSectionlMixin(TestTomlMixin):
     section = 'name'
 
