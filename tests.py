@@ -6,10 +6,10 @@ import os
 import sys
 import textwrap
 import warnings
-# try:
-#     import configparser  # py3
-# except ImportError:
-#     import ConfigParser as configparser
+try:
+    import configparser  # py3
+except ImportError:
+    import ConfigParser as configparser
 
 import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
@@ -23,11 +23,10 @@ from confix import ValidationError, AlreadyRegisteredError
 
 
 PY3 = sys.version_info >= (3, )
-# if PY3:
-#     import io
-#     StringIO = io.StringIO
-# else:
-#     from StringIO import StringIO
+if PY3:
+    StringIO = io.StringIO
+else:
+    from StringIO import StringIO
 
 if sys.version_info >= (2, 7):
     import unittest
@@ -509,7 +508,6 @@ class BaseMixin(object):
 # mixin tests
 # ===================================================================
 
-
 # yaml
 
 class TestYamlMixin(BaseMixin, BaseTestCase):
@@ -557,25 +555,30 @@ class TestTomWithSectionlMixin(TestTomlMixin):
     section = 'name'
 
 
-# TODO: see what to do with root section and re-enable this
+# ini
 
-# class TestIniMixin(BaseMixin, BaseTestCase):
-#     TESTFN = TESTFN + 'testfile.ini'
+class TestIniMixin(BaseMixin, BaseTestCase):
+    TESTFN = TESTFN + 'testfile.ini'
+    section = 'name'
 
-#     def dict_to_file(self, dct):
-#         dct = {self.section: dct}
-#         # dct = {'name': dict(foo=5)}
-#         config = configparser.RawConfigParser()
-#         for section, values in dct.items():
-#             assert isinstance(section, str)
-#             config.add_section(section)
-#             for key, value in values.items():
-#                 config.set(section, key, value)
-#         fl = StringIO()
-#         config.write(fl)
-#         fl.seek(0)
-#         content = fl.read()
-#         self.write_to_file(content)
+    def dict_to_file(self, dct):
+        if not self._testMethodName.startswith('test_multisection'):
+            dct = {self.section: dct}
+        config = configparser.RawConfigParser()
+        for section, values in dct.items():
+            assert isinstance(section, str)
+            config.add_section(section)
+            for key, value in values.items():
+                config.set(section, key, value)
+        fl = StringIO()
+        config.write(fl)
+        fl.seek(0)
+        content = fl.read()
+        self.write_to_file(content)
+
+    # TODO: temporary
+    def test_types_mismatch(self):
+        pass
 
 
 # ===================================================================
