@@ -401,15 +401,6 @@ class BaseMixin(object):
         assert config.APPLE == 30
         assert config.PeAr == 40
 
-    def test_envvars_convert_type_w_schema(self):
-        @register(self.section)
-        class config:
-            some_int = schema(1)
-
-        os.environ['SOME_INT'] = '2'
-        parse_with_envvars()
-        assert config.some_int == 2
-
     def test_envvars_type_mismatch(self):
         @register(self.section)
         class config:
