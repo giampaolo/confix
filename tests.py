@@ -65,6 +65,17 @@ class BaseTestCase(unittest.TestCase):
         if getattr(self, 'TESTFN', None) is not None:
             safe_remove(self.TESTFN)
 
+    @classmethod
+    def write_to_file(cls, content, fname=None):
+        with open(fname or cls.TESTFN, 'w') as f:
+            f.write(content)
+
+    def parse(self, *args, **kwargs):
+        parse(*args, **kwargs)
+
+    def parse_with_envvars(self, *args, **kwargs):
+        parse_with_envvars(*args, **kwargs)
+
 
 class BaseMixin(object):
     """Base class from which mixin classes are derived."""
@@ -79,15 +90,8 @@ class BaseMixin(object):
         super(BaseMixin, self).tearDown()
         self.section = self.original_section
 
-    # --- utils
-
     def dict_to_file(self, dct):
         raise NotImplementedError('must be implemented in subclass')
-
-    @classmethod
-    def write_to_file(cls, content, fname=None):
-        with open(fname or cls.TESTFN, 'w') as f:
-            f.write(content)
 
     # --- base tests
 
@@ -98,7 +102,7 @@ class BaseMixin(object):
             bar = 2
 
         self.write_to_file("   ")
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 1
         assert config.bar == 2
 
@@ -112,7 +116,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(foo=5)
         )
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 2
 
@@ -126,7 +130,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(foo=5, bar=6)
         )
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 6
 
@@ -141,7 +145,7 @@ class BaseMixin(object):
             dict(foo=5, apple=6)
         )
         with self.assertRaises(UnrecognizedKeyError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name')
         assert cm.exception.key, 'apple'
 
@@ -157,14 +161,14 @@ class BaseMixin(object):
             dict(foo=5, bar='foo')
         )
         with self.assertRaises(TypesMismatchError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name')
         assert cm.exception.key == 'bar'
         assert cm.exception.default_value == 2
         assert cm.exception.new_value == 'foo'
 
         # ...Unless we explicitly tell parse() to ignore type mismatch.
-        parse(self.TESTFN, type_check=False)
+        self.parse(self.TESTFN, type_check=False)
         assert config.foo == 5
         assert config.bar == 'foo'
 
@@ -184,7 +188,7 @@ class BaseMixin(object):
             some_int=1,
             some_str="bar",
         ))
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.some_true_bool is False
         assert config.some_false_bool is True
         assert config.some_int == 1
@@ -193,7 +197,7 @@ class BaseMixin(object):
     # def test_invalid_yaml_file(self):
     #     self.dict_to_file('?!?')
     #     with self.assertRaises(Error) as cm:
-    #         parse(self.TESTFN)
+    #         self.parse(self.TESTFN)
 
     # --- test schemas
 
@@ -205,7 +209,7 @@ class BaseMixin(object):
             foo = schema(10)
 
         self.dict_to_file({})
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 10
 
     def test_schema_required(self):
@@ -220,7 +224,7 @@ class BaseMixin(object):
             dict(bar=2)
         )
         with self.assertRaises(RequiredKeyError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name')  # TOD)
         assert cm.exception.key == 'foo'
 
@@ -234,7 +238,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(foo=5)
         )
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 5
 
     def test_schemas_w_multi_validators(self):
@@ -263,7 +267,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(overridden=5)
         )
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert sorted(flags) == [1, 2, 3, 4]
         assert config.overridden == 5
         assert config.not_overridden == 10
@@ -278,7 +282,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(foo=5)
         )
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
 
     def test_validator_ko(self):
         @register(self.section)
@@ -289,7 +293,7 @@ class BaseMixin(object):
             dict(foo=5)
         )
         with self.assertRaises(ValidationError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name')  # TOD)
         assert cm.exception.key == 'foo'
         assert cm.exception.value == 5
@@ -306,7 +310,7 @@ class BaseMixin(object):
         )
 
         with self.assertRaises(ValidationError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name'  # TOD)
         assert cm.exception.key == 'foo'
         assert cm.exception.value == 5
@@ -324,7 +328,7 @@ class BaseMixin(object):
         )
 
         with self.assertRaises(ValidationError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         # assert cm.exception.section == 'name')  # TOD)
         assert cm.exception.key == 'foo'
         assert cm.exception.value == 5
@@ -344,7 +348,7 @@ class BaseMixin(object):
             dict(foo=5)
         )
         os.environ['APPLE'] = '10'
-        parse_with_envvars(self.TESTFN)
+        self.parse_with_envvars(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 2
         assert config.apple == 10
@@ -359,7 +363,7 @@ class BaseMixin(object):
             dict(foo=5)
         )
         os.environ['FOO'] = '6'
-        parse_with_envvars(self.TESTFN)
+        self.parse_with_envvars(self.TESTFN)
         assert config.foo == 6
 
     def test_envvars_case_sensitive(self):
@@ -481,7 +485,7 @@ class BaseMixin(object):
             'ftp': dict(username='foo'),
             'http': dict(username='bar'),
         })
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert ftp_config.port == 21
         assert ftp_config.username == 'foo'
         assert http_config.port == 80
@@ -501,7 +505,7 @@ class BaseMixin(object):
             'http': dict(username='bar'),
         })
         with self.assertRaises(UnrecognizedKeyError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         assert cm.exception.key == 'http'
         assert cm.exception.new_value == dict(username='bar')
         assert cm.exception.section is None
@@ -520,7 +524,7 @@ class BaseMixin(object):
             'ftp': dict(password='bar'),
         })
         with self.assertRaises(UnrecognizedKeyError) as cm:
-            parse(self.TESTFN)
+            self.parse(self.TESTFN)
         assert cm.exception.key == 'password'
         assert cm.exception.new_value == 'bar'
         assert cm.exception.section == 'ftp'
@@ -599,6 +603,33 @@ class TestIniMixin(BaseMixin, BaseTestCase):
         self.write_to_file(content)
 
 
+# env vars
+
+class TestEnvVarsMixin(BaseMixin, BaseTestCase):
+    TESTFN = TESTFN + 'testfile.ini'
+
+    def setUp(self):
+        super(TestEnvVarsMixin, self).setUp()
+        if self._testMethodName.startswith('test_multisection'):
+            raise unittest.SkipTest
+
+    def parse(self, *args, **kwargs):
+        parse_with_envvars(**kwargs)
+
+    def parse_with_envvars(self, *args, **kwargs):
+        parse_with_envvars(**kwargs)
+
+    def dict_to_file(self, dct):
+        for k, v in dct.items():
+            os.environ[k.upper()] = str(v)
+
+    @unittest.skip("")
+    def test_unrecognized_key(self):
+        # Will fail because var names not matching the default conf
+        # keys are skipped.
+        pass
+
+
 # ===================================================================
 # tests for a specific format
 # ===================================================================
@@ -624,7 +655,7 @@ class TestIni(BaseTestCase):
             [name]
             foo = 9
         """))
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 9
 
     def test_type_str(self):
@@ -636,7 +667,7 @@ class TestIni(BaseTestCase):
             [name]
             foo = bar
         """))
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 'bar'
 
     def test_type_float(self):
@@ -648,7 +679,7 @@ class TestIni(BaseTestCase):
             [name]
             foo = 1.3
         """))
-        parse(self.TESTFN)
+        self.parse(self.TESTFN)
         assert config.foo == 1.3
 
     # # TODO: this test is broken
@@ -664,7 +695,7 @@ class TestIni(BaseTestCase):
     #             [name]
     #             foo = %s
     #         """ % (value)))
-    #         parse(self.TESTFN)
+    #         self.parse(self.TESTFN)
     #         assert config.foo == True  # NOQA
     #         discard()
 
@@ -681,7 +712,7 @@ class TestIni(BaseTestCase):
     #             [name]
     #             foo = %s
     #         """ % (value)))
-    #         parse(self.TESTFN)
+    #         self.parse(self.TESTFN)
     #         assert config.foo == False  # NOQA
     #         discard()
 
