@@ -75,6 +75,7 @@ class BaseTestCase(unittest.TestCase):
 class BaseMixin(object):
     """Base class from which mixin classes are derived."""
     TESTFN = None
+    section = None
 
     # --- utils
 
@@ -89,7 +90,7 @@ class BaseMixin(object):
     # --- base tests
 
     def test_empty_conf_file(self):
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -101,7 +102,7 @@ class BaseMixin(object):
 
     def test_conf_file_overrides_key(self):
         # Conf file overrides one key, other one should be default.
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -115,7 +116,7 @@ class BaseMixin(object):
 
     def test_conf_file_overrides_all_keys(self):
         # Conf file overrides both keys.
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -129,7 +130,7 @@ class BaseMixin(object):
 
     def test_unrecognized_key(self):
         # Conf file has a key which is not specified in the config class.
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -145,7 +146,7 @@ class BaseMixin(object):
     def test_types_mismatch(self):
         # Conf file provides a key with a value whose type is != than
         # conf class default type.
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -175,7 +176,7 @@ class BaseMixin(object):
     def test_schema_base(self):
         # A schema with no constraints is supposed to be converted into
         # its default value after parse().
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10)
 
@@ -186,7 +187,7 @@ class BaseMixin(object):
     def test_schema_required(self):
         # If a schema is required and it's not specified in the config
         # file expect an error.
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, required=True)
             bar = 2
@@ -202,7 +203,7 @@ class BaseMixin(object):
     def test_schema_required_provided(self):
         # If a schema is required and it's provided in the conf file
         # eveything is cool.
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, required=True)
 
@@ -229,7 +230,7 @@ class BaseMixin(object):
             flags.append(4)
             return True
 
-        @register()
+        @register(self.section)
         class config:
             overridden = schema(10, validator=[fun1, fun2])
             not_overridden = schema(10, validator=[fun3, fun4])
@@ -246,7 +247,7 @@ class BaseMixin(object):
     # --- test validators
 
     def test_validator_ok(self):
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, int))
 
@@ -256,7 +257,7 @@ class BaseMixin(object):
         parse(self.TESTFN)
 
     def test_validator_ko(self):
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, str))
 
@@ -273,7 +274,7 @@ class BaseMixin(object):
         def validator(value):
             raise ValidationError('message')
 
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, validator=validator)
         self.dict_to_file(
@@ -291,7 +292,7 @@ class BaseMixin(object):
         def validator(value):
             raise ValidationError
 
-        @register()
+        @register(self.section)
         class config:
             foo = schema(10, validator=validator)
         self.dict_to_file(
@@ -309,7 +310,7 @@ class BaseMixin(object):
     # --- test parse_with_envvars
 
     def test_envvars_base(self):
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -326,7 +327,7 @@ class BaseMixin(object):
 
     def test_envvars_precendence_order(self):
         # envvar should take precedence over conf file
-        @register()
+        @register(self.section)
         class config:
             foo = 1
 
@@ -338,7 +339,7 @@ class BaseMixin(object):
         assert config.foo == 6
 
     def test_envvars_case_sensitive(self):
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -354,7 +355,7 @@ class BaseMixin(object):
         assert config.APPLE == 30
 
     def test_envvars_case_insensitive(self):
-        @register()
+        @register(self.section)
         class config:
             foo = 1
             bar = 2
@@ -373,7 +374,7 @@ class BaseMixin(object):
         assert config.PeAr == 40
 
     def test_envvars_convert_type(self):
-        @register()
+        @register(self.section)
         class config:
             some_int = 1
             some_float = 1.0
@@ -391,7 +392,7 @@ class BaseMixin(object):
         assert config.some_false_bool is True
 
     def test_envvars_convert_type_w_schema(self):
-        @register()
+        @register(self.section)
         class config:
             some_int = schema(1)
 
@@ -400,7 +401,7 @@ class BaseMixin(object):
         assert config.some_int == 2
 
     def test_envvars_type_mismatch(self):
-        @register()
+        @register(self.section)
         class config:
             some_int = 1
             some_float = 0.1
@@ -530,18 +531,20 @@ class TestTomlMixin(BaseMixin, BaseTestCase):
 # class TestIniMixin(BaseMixin, BaseTestCase):
 #     TESTFN = TESTFN + 'testfile.ini'
 
-    # def dict_to_file(self, dct):
-    #     config = configparser.RawConfigParser()
-    #     for section, values in dct.items():
-    #         assert isinstance(section, str)
-    #         config.add_section(section)
-    #         for key, value in values.items():
-    #             config.set(section, key, value)
-    #     fl = StringIO()
-    #     config.write(fl)
-    #     fl.seek(0)
-    #     content = fl.read()
-    #     self.write_to_file(content)
+#     def dict_to_file(self, dct):
+#         dct = {self.section: dct}
+#         # dct = {'name': dict(foo=5)}
+#         config = configparser.RawConfigParser()
+#         for section, values in dct.items():
+#             assert isinstance(section, str)
+#             config.add_section(section)
+#             for key, value in values.items():
+#                 config.set(section, key, value)
+#         fl = StringIO()
+#         config.write(fl)
+#         fl.seek(0)
+#         content = fl.read()
+#         self.write_to_file(content)
 
 
 # ===================================================================
