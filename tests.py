@@ -142,7 +142,7 @@ class BaseMixin(object):
         )
         with self.assertRaises(UnrecognizedKeyError) as cm:
             parse(self.TESTFN)
-        # assert cm.exception.section == 'name')  # TOD)
+        # assert cm.exception.section == 'name')
         assert cm.exception.key, 'apple'
 
     def test_types_mismatch(self):
@@ -167,6 +167,28 @@ class BaseMixin(object):
         parse(self.TESTFN, type_check=False)
         assert config.foo == 5
         assert config.bar == 'foo'
+
+    def test_base_types(self):
+        # str, int, float, bool are supposed to be supported by all
+        # file formats.
+        @register(self.section)
+        class config:
+            some_true_bool = True
+            some_false_bool = False
+            some_int = 0
+            some_str = "foo"
+
+        self.dict_to_file(dict(
+            some_true_bool=False,
+            some_false_bool=True,
+            some_int=1,
+            some_str="bar",
+        ))
+        parse(self.TESTFN)
+        assert config.some_true_bool is False
+        assert config.some_false_bool is True
+        assert config.some_int == 1
+        assert config.some_str == "bar"
 
     # def test_invalid_yaml_file(self):
     #     self.dict_to_file('?!?')
@@ -835,7 +857,7 @@ class TestExceptions(BaseTestCase):
         assert 'not parsed' in str(exc)
 
     def test_unrecognized_key_error(self):
-        exc = UnrecognizedKeyError(key='foo', new_value='bar')
+        exc = UnrecognizedKeyError(section=None, key='foo', new_value='bar')
         assert str(exc) == \
             "config file provides key 'foo' with value 'bar' but key 'foo' " \
             "is not defined in the config class"

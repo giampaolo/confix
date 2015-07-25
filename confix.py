@@ -129,10 +129,10 @@ class UnrecognizedKeyError(Error):
     that is defined in the config file.
     """
 
-    def __init__(self, key, new_value, section=None, msg=None):
+    def __init__(self, section, key, new_value, msg=None):
+        self.section = section
         self.key = key
         self.new_value = new_value
-        self.section = section
         self.msg = msg
 
     def __str__(self):
@@ -561,7 +561,7 @@ class _Parser:
                 try:
                     conf_class = conf_map[None]
                 except KeyError:
-                    raise UnrecognizedKeyError(key, new_value, section=None)
+                    raise UnrecognizedKeyError(None, key, new_value)
                 self.process_pair(key, new_value, conf_class,
                                   section=None)
 
@@ -578,7 +578,7 @@ class _Parser:
         except AttributeError:
             # Conf file defines a key which does not exist in the
             # conf class.
-            raise UnrecognizedKeyError(key, new_value, section=section)
+            raise UnrecognizedKeyError(section, key, new_value)
 
         # Cast values for ini files (which only support string type).
         if self.file_ext == '.ini':
