@@ -508,7 +508,7 @@ class _Parser:
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
 
-    def cast_value(self, section, name, default_value, new_value):
+    def cast_value(self, section, key, default_value, new_value):
         """Cast a value depending on default value type."""
         if isinstance(default_value, schema):
             default_value = default_value.default
@@ -520,26 +520,26 @@ class _Parser:
             else:
                 if self.type_check:
                     raise TypesMismatchError(
-                        section, name, default_value, new_value)
+                        section, key, default_value, new_value)
         elif isinstance(default_value, int):
             try:
                 new_value = int(new_value)
             except ValueError:
                 if self.type_check:
                     raise TypesMismatchError(
-                        section, name, default_value, new_value)
+                        section, key, default_value, new_value)
         elif isinstance(default_value, float):
             try:
                 new_value = float(new_value)
             except ValueError:
                 if self.type_check:
                     raise TypesMismatchError(
-                        section, name, default_value, new_value)
+                        section, key, default_value, new_value)
         else:
             # leave the new value unmodified (str)
             pass
         # _log("envvar=%s, value=%r, default_value=%r, "
-        #      "casted_to=%r" % (name, value, default_value, new_value))
+        #      "casted_to=%r" % (key, value, default_value, new_value))
         return new_value
 
     def process_conf(self, conf):
