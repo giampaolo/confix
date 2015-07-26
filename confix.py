@@ -198,8 +198,10 @@ def _has_multi_conf_classes():
     return len(_conf_map) > 1
 
 
-def _has_sectionless_conf():
-    return None in _conf_map
+def _has_sectionless_conf(cmap=None):
+    if cmap is None:
+        cmap = _conf_map
+    return None in cmap
 
 
 @contextlib.contextmanager
@@ -408,7 +410,7 @@ def get_parsed_conf():
         conf_map = _conf_map.copy()
     ret = {}
     # root section
-    if _has_sectionless_conf():
+    if _has_sectionless_conf(conf_map):
         conf_class = conf_map.pop(None)
         ret = dict(conf_class)
     # other sections
@@ -504,10 +506,6 @@ class _Parser:
                             self.new_conf[section] = {}
                         self.new_conf[section][key_name] = new_value
 
-                    _log("envvar=%s, value=%r, default_conf_value=%r, "
-                         "casted_to=%r" % (key_name.upper(), raw_value,
-                                           default_value, new_value))
-
     def cast_value(self, section, key, default_value, new_value):
         """Cast a value depending on default value type."""
         if isinstance(default_value, schema):
@@ -538,16 +536,14 @@ class _Parser:
         else:
             # leave the new value unmodified (str)
             pass
-        # _log("envvar=%s, value=%r, default_value=%r, "
-        #      "casted_to=%r" % (key, value, default_value, new_value))
         return new_value
 
-    def process_conf(self, conf):
+    def process_conf(self, new_conf):
         conf_map = _conf_map.copy()
         if not conf_map:
             raise Error("no registered conf classes were found")
         # iterate over file / envvar conf
-        for key, new_value in conf.items():
+        for key, new_value in new_conf.items():
             # this should never happen
             assert key is not None, key
             if key in conf_map:
