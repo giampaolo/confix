@@ -168,11 +168,11 @@ class TypesMismatchError(Error):
     than the original one defined in the configuration class.
     """
 
-    def __init__(self, key, default_value, new_value, section=None, msg=None):
+    def __init__(self, section, key, default_value, new_value, msg=None):
+        self.section = section
         self.key = key
         self.default_value = default_value
         self.new_value = new_value
-        self.section = section
         self.msg = msg
 
     def __str__(self):
@@ -496,7 +496,7 @@ class _Parser:
                     default_value = getattr(conf_class, key_name)
                     raw_value = env[key_name.upper()]
                     new_value = self.cast_value(
-                        key_name, default_value, raw_value)
+                        section, key_name, default_value, raw_value)
                     if section is None:
                         self.new_conf[key_name] = new_value
                     else:
@@ -508,7 +508,7 @@ class _Parser:
                          "casted_to=%r" % (key_name.upper(), raw_value,
                                            default_value, new_value))
 
-    def cast_value(self, name, default_value, new_value):
+    def cast_value(self, section, name, default_value, new_value):
         """Cast a value depending on default value type."""
         if isinstance(default_value, schema):
             default_value = default_value.default
@@ -519,19 +519,22 @@ class _Parser:
                 new_value = False
             else:
                 if self.type_check:
-                    raise TypesMismatchError(name, default_value, new_value)
+                    raise TypesMismatchError(
+                        section, name, default_value, new_value)
         elif isinstance(default_value, int):
             try:
                 new_value = int(new_value)
             except ValueError:
                 if self.type_check:
-                    raise TypesMismatchError(name, default_value, new_value)
+                    raise TypesMismatchError(
+                        section, name, default_value, new_value)
         elif isinstance(default_value, float):
             try:
                 new_value = float(new_value)
             except ValueError:
                 if self.type_check:
-                    raise TypesMismatchError(name, default_value, new_value)
+                    raise TypesMismatchError(
+                        section, name, default_value, new_value)
         else:
             # leave the new value unmodified (str)
             pass
@@ -552,24 +555,25 @@ class _Parser:
                 # Possibly we may have multiple regeister()ed conf classes.
                 # "new_value" in this case is actually a dict of sub-section
                 # items.
-                conf_class = conf_map[key]
+                section = key
+                conf_class = conf_map[section]
                 # TODO: turn this into a proper error
                 assert isinstance(new_value, dict), new_value
                 # assert new_value, new_value
                 for k, nv in new_value.items():
-                    self.process_pair(k, nv, conf_class, section=key)
+                    self.process_pair(section, k, nv, conf_class)
             else:
                 # We're not dealing with a section.
+                section = None
                 try:
                     conf_class = conf_map[None]
                 except KeyError:
                     raise UnrecognizedKeyError(None, key, new_value)
-                self.process_pair(key, new_value, conf_class,
-                                  section=None)
+                self.process_pair(section, key, new_value, conf_class)
 
         self.run_last_schemas()
 
-    def process_pair(self, key, new_value, conf_class, section):
+    def process_pair(self, section, key, new_value, conf_class):
         """Given a key / value pair extracted either from the config
         file or env vars process it (validate it) and override the
         config class original key value.
@@ -584,7 +588,7 @@ class _Parser:
 
         # Cast values for ini files (which only support string type).
         if self.file_ext == '.ini':
-            new_value = self.cast_value(key, default_value, new_value)
+            new_value = self.cast_value(section, key, default_value, new_value)
 
         # Look for type mismatch.
         is_schema = isinstance(default_value, schema)
@@ -619,8 +623,8 @@ class _Parser:
                 # between str and unicode.
                 pass
             else:
-                raise TypesMismatchError(key, default_value, new_value,
-                                         section=section)
+                raise TypesMismatchError(
+                    section, key, default_value, new_value)
 
     @staticmethod
     def run_validators(schema_, section, key, new_value):

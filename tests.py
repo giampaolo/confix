@@ -146,7 +146,7 @@ class BaseMixin(object):
         )
         with self.assertRaises(UnrecognizedKeyError) as cm:
             self.parse(self.TESTFN)
-        # assert cm.exception.section == 'name')
+        assert cm.exception.section == self.section
         assert cm.exception.key, 'apple'
 
     def test_types_mismatch(self):
@@ -162,7 +162,7 @@ class BaseMixin(object):
         )
         with self.assertRaises(TypesMismatchError) as cm:
             self.parse(self.TESTFN)
-        # assert cm.exception.section == 'name')
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'bar'
         assert cm.exception.default_value == 2
         assert cm.exception.new_value == 'foo'
@@ -225,7 +225,7 @@ class BaseMixin(object):
         )
         with self.assertRaises(RequiredKeyError) as cm:
             self.parse(self.TESTFN)
-        # assert cm.exception.section == 'name')  # TOD)
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'foo'
 
     def test_schema_required_provided(self):
@@ -294,7 +294,7 @@ class BaseMixin(object):
         )
         with self.assertRaises(ValidationError) as cm:
             self.parse(self.TESTFN)
-        # assert cm.exception.section == 'name')  # TOD)
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'foo'
         assert cm.exception.value == 5
 
@@ -329,7 +329,7 @@ class BaseMixin(object):
 
         with self.assertRaises(ValidationError) as cm:
             self.parse(self.TESTFN)
-        # assert cm.exception.section == 'name')  # TOD)
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'foo'
         assert cm.exception.value == 5
         assert cm.exception.msg is None
@@ -412,7 +412,7 @@ class BaseMixin(object):
         os.environ['SOME_INT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
-        # assert cm.exception.section == 'name')
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'some_int'
         assert cm.exception.default_value == 1
         assert cm.exception.new_value == 'foo'
@@ -422,7 +422,7 @@ class BaseMixin(object):
         os.environ['SOME_FLOAT'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
-        # assert cm.exception.section == 'name')
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'some_float'
         assert cm.exception.default_value == 0.1
         assert cm.exception.new_value == 'foo'
@@ -432,7 +432,7 @@ class BaseMixin(object):
         os.environ['SOME_BOOL'] = 'foo'
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
-        # assert cm.exception.section == 'name')
+        assert cm.exception.section == self.section
         assert cm.exception.key == 'some_bool'
         assert cm.exception.default_value is True
         assert cm.exception.new_value == 'foo'
@@ -848,7 +848,8 @@ class TestExceptions(BaseTestCase):
             "config file or env var"
 
     def test_types_mismatch_error(self):
-        exc = TypesMismatchError(key="foo", default_value=1, new_value='bar')
+        exc = TypesMismatchError(
+            section=None, key="foo", default_value=1, new_value='bar')
         assert str(exc) == \
             "type mismatch for key 'foo' (default_value=1, %s) got " \
             "'bar' (%s)" % (type(1), type(""))
