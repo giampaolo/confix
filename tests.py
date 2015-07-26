@@ -1020,6 +1020,12 @@ class TestRegister(BaseTestCase):
             class config:
                 foo = 1
 
+    def test_invalid_section_str(self):
+        with self.assertRaises(ValueError):
+            @register(section="")
+            class config:
+                foo = 1
+
 
 # ===================================================================
 # misc tests

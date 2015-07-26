@@ -397,6 +397,9 @@ def register(section=None):
     if section is not None and not isinstance(section, basestring):
         raise TypeError("invalid section; expected either string or None, "
                         "got %r" % section)
+    if isinstance(section, basestring):
+        if " " in section or not section.strip():
+            raise ValueError("invalid section name %r" % section)
     return wrapper
 
 
