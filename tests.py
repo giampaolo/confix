@@ -622,9 +622,8 @@ class TestIni(BaseTestCase):
             "can't parse ini files if a sectionless configuration class",
             parse, self.TESTFN)
 
-    # TODO: also test case-sensitiveness of these values
-    def test_ini_true_type(self):
-        for value in ("1", "yes", "true", "on"):
+    def test_true_type(self):
+        for value in ("1", "yes", "true", "on", "YES", "TRUE", "ON"):
             @register('name')
             class config:
                 foo = False
@@ -637,9 +636,8 @@ class TestIni(BaseTestCase):
             assert config.foo is True
             discard()
 
-    # TODO: also test case-sensitiveness of these values
-    def test_ini_false_type(self):
-        for value in ("0", "no", "false", "off"):
+    def test_false_type(self):
+        for value in ("0", "no", "false", "off", "NO", "FALSE", "OFF"):
             @register('name')
             class config:
                 foo = True
@@ -649,6 +647,31 @@ class TestIni(BaseTestCase):
                 foo = %s
             """ % (value)))
             self.parse(self.TESTFN)
+            assert config.foo is False
+            discard()
+
+
+class TestEnvVars(BaseTestCase):
+
+    def test_true_type(self):
+        for value in ("1", "yes", "true", "on", "YES", "TRUE", "ON"):
+            @register()
+            class config:
+                foo = False
+
+            os.environ['FOO'] = value
+            self.parse_with_envvars()
+            assert config.foo is True
+            discard()
+
+    def test_false_type(self):
+        for value in ("0", "no", "false", "off", "NO", "FALSE", "OFF"):
+            @register('name')
+            class config:
+                foo = True
+
+            os.environ['FOO'] = value
+            self.parse_with_envvars()
             assert config.foo is False
             discard()
 
