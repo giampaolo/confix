@@ -10,7 +10,7 @@ install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
 #    - py.test --cov confix -s -v tests.py
-    - pytest -s -v tests.py
+    - py.test -s -v tests.py
     - flake8
     - pep8
 os:
