@@ -337,7 +337,8 @@ class BaseMixin(object):
 
     # --- test parse_with_envvars
 
-    def test_envvars_base(self):
+    def test_envvars_w_file(self):
+        # Test both config file and env vars are taken into account.
         @register(self.section)
         class config:
             foo = 1
@@ -354,7 +355,7 @@ class BaseMixin(object):
         assert config.apple == 10
 
     def test_envvars_precendence_order(self):
-        # envvar should take precedence over conf file
+        # Test env var takes precedence over config file.
         @register(self.section)
         class config:
             foo = 1

@@ -104,7 +104,7 @@ class AlreadyParsedError(Error):
 
 
 class AlreadyRegisteredError(Error):
-    """Raised by @register when registering a class twice."""
+    """Raised by @register when registering the same section twice."""
 
     def __init__(self, section):
         self.section = section
@@ -127,8 +127,8 @@ class NotParsedError(Error):
 
 
 class UnrecognizedKeyError(Error):
-    """Raised when the configuration class does not define a key but
-    that is defined in the config file.
+    """Raised on parse if the configuration file defines a key which
+    is not defined by the default configuration class.
     """
 
     def __init__(self, section, key, new_value, msg=None):
@@ -147,8 +147,8 @@ class UnrecognizedKeyError(Error):
 
 
 class RequiredKeyError(Error):
-    """Raised when the config file didn't specify a required key
-    (enforced by a schema()).
+    """Raised when the config file doesn't specify a key which was required
+    via schema(required=True).
     """
 
     def __init__(self, key, section=None, msg=None):
@@ -160,12 +160,13 @@ class RequiredKeyError(Error):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
         return self.msg or \
             "configuration class requires %r key to be specified via config " \
-            "file or env var" % (key)
+            "file or environment variable" % (key)
 
 
 class TypesMismatchError(Error):
-    """Raised when config file overrides a key having a type different
-    than the original one defined in the configuration class.
+    """Raised when config file overrides a key having a type which
+    is different than the original one defined in the configuration
+    class.
     """
 
     def __init__(self, section, key, default_value, new_value, msg=None):
@@ -695,13 +696,16 @@ def parse(conf_file=None, file_parser=None, type_check=True):
 def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
                        case_sensitive=False):
     """Same as parse() but also takes environment variables into account.
-    The order of precedence is:
-
-    env-var -> conf-file -> conf-class
-
-    - (bool) case_sensitive: if `False` env var 'FOO' and 'foo' will be
-      the treated the same and will override config class' key 'foo'
-      (also tread case in a case insensitive manner).
+    It must be noted that env vars take precedence over the config file
+    (if specified).
+    Only upper cased environment variables are taken into account.
+    By default (case_sensitive=False) env var "FOO" will override a
+    key with the same name in a non case sensitive fashion ('foo',
+    'Foo', 'FOO', etc.).
+    Also "sections" are not supported so if multiple config classes
+    define a key "foo" all of them will be overwritten.
+    If `case_sensitive` is True then it is supposed that the config
+    class(es) define all upper cased keys.
     """
     with _lock_ctx():
         _Parser(conf_file=conf_file,

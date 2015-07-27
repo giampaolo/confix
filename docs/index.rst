@@ -23,15 +23,20 @@ About
 
 Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
-class, then overwrite only the keys you need from a static config file (be it
-YAML, JSON, INI or TOML) and/or via environment variables.
-This is useful in order to avoid storing sensitive data (e.g. passwords) in the
-source code.
+class, then overwrite its attributes from a static configuration file (be it
+YAML, JSON, INI or TOML) and / or via environment variables.
+This is useful to avoid storing sensitive data (e.g. passwords) in the source
+code and validate configuration on startup (via validators, mandatory
+attributes and type checking).
 
 API reference
 =============
 
 **Exceptions**
+
+.. class:: Error(msg)
+
+    Base exception class from which derive all others.
 
 .. class:: ValidationError(msg)
 
@@ -43,6 +48,38 @@ API reference
 
     Called when :func:`get_parsed_conf()` is called but :func:`confix.parse()`
     has not been called yet.
+
+.. class:: AlreadyParsedError
+
+    Raised when :func:`confix.parse()` or :func:`confix.parse_with_envvars()`
+    is called twice.
+
+.. class:: AlreadyRegisteredError
+
+    Raised by :func:`confix.register` when registering the same section twice.
+
+.. class:: NotParsedError
+
+    Raised when :func:`confix.get_parsed_conf()` is called but
+    :func:`confix.parse() has not been called yet.
+
+.. class:: UnrecognizedKeyError
+
+    Raised on parse if the configuration file defines a key which is not
+    defined by the default configuration class.
+    You're not supposed to catch this but instead fix the config file.
+
+.. class:: RequiredKeyError
+
+    Raised when the config file doesn't specify a key which was required
+    via ``schema(required=True)``.
+    You're not supposed to catch this but instead fix the config file.
+
+.. class:: TypesMismatchError
+
+    Raised when config file overrides a key having a type which is different
+    than the original one defined in the configuration class.
+    You're not supposed to catch this but instead fix the config file.
 
 **Functions**
 
@@ -57,22 +94,8 @@ API reference
     for methods, classmethods or any other non-callable type.
     A class decoratored with this method becomes dict()-able.
     Keys can be accessed as normal attributes or also as a dict.
-
-    .. code-block:: python
-
-        >>> import confix
-        >>>
-        >>> @confix.register()
-        >>> class config:
-        ...     foo = 1
-        ...     bar = 2
-        ...
-        >>> config.foo
-        1
-        >>> config['foo']
-        1
-        >>> dict(config)
-        {'foo': 1, 'bar': 2}
+    All attribute names starting with an underscore will be ignored.
+    The class can also define classmethods.
 
 .. function:: schema(default=_DEFAULT, required=False, validator=None)
 
@@ -91,8 +114,8 @@ API reference
     Parse configuration class(es) replacing values if a configuration file
     is provided.
     *conf_file* is a path to a configuration file or an existing
-    file-like object. If this is ``None`` configuration class will be parsed
-    anyway in order to validate its :func:`confix.schema()` s.
+    file-like object. If *conf_file* is ``None`` configuration class will be
+    parsed anyway in order to validate its schemas (:func:`confix.schema()`).
     *file_parser* is a callable parsing the configuration file and
     converting it to a dict.  If ``None`` a default parser will be
     picked up depending on the file extension. You may want to override this
@@ -105,13 +128,16 @@ API reference
 
     Same as :func:`confix.parse()` but also takes environment variables into
     account.
-    If an environment variable name matches a key of the config class that
-    will replaced with the environment variable value.
-    If *case_sensitive* is ``False`` env var ``"FOO"`` and ``"foo"`` will be
-    the treated the same and will override config class' key ``"foo"``.
-    If *conf_file* is specified also a configuration file will be parsed but
-    the environment variables will take precedence as in:
-    ``environment variable -> config file -> config class default value``.
+    It must be noted that env vars take precedence over the config file
+    (if specified).
+    Only upper cased environment variables are taken into account.
+    By default (``case_sensitive=False``) env var ``"FOO"`` will override a
+    key with the same name in a non case sensitive fashion (``'foo'``,
+    ``'Foo'``, ``'FOO'``, etc.).
+    Also multiple "sections" are not supported so if multiple config classes
+    define a key ``'foo'`` all of them will be overwritten.
+    If *case_sensitive* is ``True`` then it is supposed that the config
+    class(es) define all upper cased keys.
 
 .. function:: get_parsed_conf()
 
@@ -180,7 +206,8 @@ shell:
 Things to note:
  - ``password`` got changed by config file.
  - ``parse()`` did the trick.
- - configuration fields ("keys") can be accessed as ``config.name``.
+ - configuration fields ("keys") can be accessed as attributes
+   (``config.name``).
 
 
 Override a key via environment variable
@@ -211,18 +238,63 @@ shell:
     secret
 
 Things to note:
- - env vars are case insensitive (to change this behavior you can use
-   ``parse_with_envvars(case_sensitive=True))``.
- - parse_with_envvars
-   ``parse_with_envvars('config.yaml', case_sensitive=True))``.
- - env vars take precedence over config file though.
+ - ``"PASSWORD"`` env var changed the value of ``"password"`` configuration
+   key which is treated in a case insensitive fashion.
+ - to change this behavior use ``parse_with_envvars(case_sensitive=True))``
+   but in that case also the class attributed must be upper case
+   (``"PASSWORD"``).
+
+Using configuration file and environment variables
+--------------------------------------------------
+
+You can overwrite default configuration by using both a configuration file
+**and** environment variables. Environment variables take precedence over
+the configuration file though.
+
+python file:
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, parse_with_envvars
+
+    @register()
+    class config:
+        username = 'ftp'
+        password = None
+        host = localhost
+
+    parse_with_envvars(config_file='config.yml')
+    print(config.username)
+    print(config.password)
+    print(config.host)
+
+.. code-block:: yaml
+
+    # config.yml
+    username: john
+    password: secret
+    host: localhost
+
+shell:
+
+.. code-block:: text
+
+    $ PASSWORD=somecrazypass python main.py
+    john
+    somecrazypass
+    localhost
+
+Things to note:
+ - ``"password"`` was specified in the config file but also by the env var
+   and this takes precedence over the config file.
 
 Errors: configuration definition
 --------------------------------
 
-One of the key features is that the config class is a definition of all your
-app configuration. If the conf file declares a key which is not defined in the
-config class confix will error out.
+One of the key features of confix is that the config class is a definition of
+all your app configuration. If the config file declares a key which is not
+defined in the config class confix will error out.
 
 .. code-block:: python
 
@@ -261,6 +333,9 @@ shell:
         raise UnrecognizedKeyError(key, new_value, section=section)
     confix.UnrecognizedKeyError: config file provides key 'host' with value 'localhost' but key 'host' is not defined in the config class
 
+Things to note:
+ - key ``'host'`` was specified in the config file but not in the default
+   config class.
 
 Errors: types checking
 ----------------------
@@ -315,7 +390,7 @@ Required arguments
 ------------------
 
 You can force certain arguments to be required, meaning they *have* to be
-specified via conf file or environment variable.
+specified via config file or environment variable.
 
 python file:
 
@@ -404,7 +479,66 @@ shell:
     $ PASSWORD=longpassword python main.py
     longpassword
 
-A more advanced validator may look like this:
+Marking keys as mandatory
+-------------------------
+
+Certain keys can be marked as mandatory, meaning if they are not specified in
+the config file (or via env var) confix will error out. This is useful to avoid
+storing sensitive data (e.g. passwords) in the source code.
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, schema, parse
+
+    @register()
+    class config:
+        password = schema(None, required=True)
+
+    parse()
+
+.. code-block:: text
+
+    $ python main.py
+    Traceback (most recent call last):
+      File "main.py", line 7, in <module>
+        parse()
+      File "/home/giampaolo/svn/confix/confix.py", line 693, in parse
+        type_check=type_check)
+      File "/home/giampaolo/svn/confix/confix.py", line 443, in __init__
+        self.process_conf(self.new_conf)
+      File "/home/giampaolo/svn/confix/confix.py", line 574, in process_conf
+        self.run_last_schemas()
+      File "/home/giampaolo/svn/confix/confix.py", line 664, in run_last_schemas
+        raise RequiredKeyError(key, section=section)
+    confix.RequiredKeyError: configuration class requires 'password' key to be specified via config file or environment variable
+
+Default validators
+------------------
+
+confix provides a bunch of validators by default. This example shows all of
+them:
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, schema, istrue, isin, isnotin, isemail
+
+    @register()
+    class config:
+        username = schema('john', validator=istrue)
+        status = schema('active', validator=isin(['active', inactive]))
+        password = schema(None, mandatory=True,
+                          validator=isnotin(['12345', 'password']))
+        email = schema('user@domain.com', validator=isemail)
+
+Custom validators
+-----------------
+
+A validator is a function which receives the overidden value as first argument
+and fails if it does not return ``True``. ``confix.ValidationError`` exception
+can be raised instead of returning ``False`` to provide a detailed error
+message. Example of a custom validator:
 
 .. code-block:: python
 
@@ -487,3 +621,68 @@ Things to note:
    env var via cmdline ``username`` key of both config classes would have been
    overwritten.
  - we may also have defined a third "root" config class, with no section.
+
+Notes about @register
+---------------------
+
+Classes registered via :func:`confix.register` decorator have a bunch of
+peculiarities:
+
+ - attributes starting with an underscore will be ignored.
+ - attributes can be accessed both as normal attributes (``config.foo``) and
+   as a ``dict`` (``config['foo']``).
+ - ``dict()`` can be used against the registered class in order to get the
+   whole configuration.
+ - the config class can have class methods.
+
+
+.. code-block:: python
+
+    >>> import confix
+    >>>
+    >>> @confix.register()
+    >>> class config:
+    ...     foo = 1
+    ...     bar = 2
+    ...     _apple = 3
+    ...
+    >>> config.foo
+    1
+    >>> config['foo']
+    1
+    >>> dict(config)
+    {'foo': 1, 'bar': 2}
+    >>>
+
+INI files
+---------
+
+INI files are supported but since they are based on "sections" also your
+configuration class(es) must have sections.
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, parse
+
+    @register()
+    class config:
+        foo = 2
+
+    parse()
+
+.. code-block:: text
+
+    $ python main.py
+    Traceback (most recent call last):
+      File "main.py", line 8, in <module>
+        parse('config.ini')
+      File "/home/giampaolo/svn/confix/confix.py", line 693, in parse
+        type_check=type_check)
+      File "/home/giampaolo/svn/confix/confix.py", line 440, in __init__
+        self.new_conf = self.get_conf_from_file()
+      File "/home/giampaolo/svn/confix/confix.py", line 483, in get_conf_from_file
+        raise Error("can't parse ini files if a sectionless "
+    confix.Error: can't parse ini files if a sectionless configuration class has been registered
+
+This means that if you have an INI file you must define multiple configuration classes, each one with a different section name.

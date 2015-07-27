@@ -35,13 +35,14 @@ Quick links
 About
 -----
 
-A language-agnostic configuration parser for Python.
+Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
-class, then **overwrite only the keys you need** from a static config file
-(be it **YAML, JSON, INI or TOML**) and/or
+class, then overwrite its attributes from a static configuration file (be it
+YAML, JSON, INI or TOML) and / or via
 `environment variables <http://pythonhosted.org/confix#override-a-key-via-environment-variable>`_.
-This is useful in order to avoid storing sensitive data (e.g. passwords) in
-the source code.
+This is useful to avoid storing sensitive data (e.g. passwords) in the source
+code and validate configuration on startup (via validators, mandatory
+attributes and type checking).
 
 Example:
 
@@ -85,7 +86,8 @@ Main features
 - can be easily extended to support other formats.
 - support for Python 3
 - small code base
-- allows you to define 'schemas' in order to **validate** options and mark them
+- 100% test coverage
+- allows you to define 'schemas' in order to **validate** fields and mark them
   as **required**:
 
  .. code-block:: python
