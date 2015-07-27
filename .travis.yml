@@ -1,4 +1,5 @@
 language: python
+sudo: false
 python:
     - 2.6
     - 2.7
@@ -9,7 +10,8 @@ install:
     - pip install coverage coveralls flake8 pep8 pyyaml toml pytest pytest-cov
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
-    - py.test -s -v tests.py
+    # - py.test -s -v tests.py
+    - coverage run tests.py
     - flake8
     - pep8
 os:
@@ -18,5 +20,4 @@ os:
 after_success:
     # TODO: can't find a way for pytest to work with coveralls hence
     # run tests one more time
-    - coverage run tests.py
-    - coveralls -v  # upload reports to coveralls.io
+    - coveralls  # upload reports to coveralls.io
