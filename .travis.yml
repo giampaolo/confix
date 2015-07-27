@@ -9,7 +9,7 @@ install:
     - pip install coverage coveralls flake8 pep8 pyyaml toml pytest pytest-cov
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
-    - pytest tests.py -s -v --cov confix --cov-report term-missing
+    - py.test tests.py -s -v --cov confix --cov-report term-missing
     - coverage report
     - flake8
     - pep8
