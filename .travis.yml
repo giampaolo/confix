@@ -17,4 +17,4 @@ os:
     - linux
     - osx
 after_success:
-  - coveralls  # upload reports to coveralls.io
+  - coveralls -v  # upload reports to coveralls.io
