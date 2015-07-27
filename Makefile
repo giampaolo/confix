@@ -38,6 +38,7 @@ setup-dev-env: install-git-hooks
 		flake8 \
 		pep8 \
 		pytest \
+		pytest-cov \
 		pyyaml \
 		sphinx \
 		sphinx-pypi-upload \

@@ -13,6 +13,7 @@
 parse()
 =======
 
+- provide some way to also parse a dict object
 - should we rollback() and reset _conf_map on validation error?
 - should parse() return get_parsed_conf()?
 - add _after_parse callback? (it's gonna be a class method)

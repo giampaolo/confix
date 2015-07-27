@@ -6,10 +6,10 @@ python:
     - 3.4
     - pypy
 install:
-    - pip install coverage coveralls flake8 pep8 pyyaml toml
+    - pip install coverage coveralls flake8 pep8 pyyaml toml pytest-cov
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
 script:
-    - coverage run tests.py
+    - pytest --cov confix -s -v tests.py
     - flake8
     - pep8
 os:

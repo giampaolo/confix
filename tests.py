@@ -846,7 +846,7 @@ class TestExceptions(BaseTestCase):
         exc = RequiredKeyError(key="foo")
         assert str(exc) == \
             "configuration class requires 'foo' key to be specified via " \
-            "config file or env var"
+            "config file or environment variable"
 
     def test_types_mismatch_error(self):
         exc = TypesMismatchError(

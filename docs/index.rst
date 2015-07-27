@@ -294,7 +294,8 @@ Errors: configuration definition
 
 One of the key features of confix is that the config class is a definition of
 all your app configuration. If the config file declares a key which is not
-defined in the config class confix will error out.
+defined in the config class confix will error out. This is useful in case you
+made a typo in your config file.
 
 .. code-block:: python
 
@@ -686,3 +687,26 @@ configuration class(es) must have sections.
     confix.Error: can't parse ini files if a sectionless configuration class has been registered
 
 This means that if you have an INI file you must define multiple configuration classes, each one with a different section name.
+
+Supporting other file formats
+-----------------------------
+
+By default confix supports YAML, JSON, INI and TOML configuration formats.
+If you want to add a new format you can write a parser for that specific format
+as a function, have it return a dict and pass it to :func`confix.parse()`.
+Example:
+
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, parse
+
+    @register()
+    class config:
+        foo = 1
+
+    def parse_new_format():
+        return {}
+
+    parse('config.ext', file_parser=parse_new_format)
