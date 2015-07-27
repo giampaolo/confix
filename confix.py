@@ -270,7 +270,7 @@ def isemail(value):
 
 def parse_yaml(file):
     import yaml  # requires pip install pyyaml
-    return yaml.load(file.read())
+    return yaml.load(file)
 
 
 def parse_toml(file):
@@ -652,8 +652,8 @@ class _Parser:
 
     @staticmethod
     def run_last_schemas():
-        """Parse the configuration classes in order to collect all schemas
-        which were not overwritten by the config file.
+        """Iterate over configuration classes in order to collect all
+        schemas which were not overwritten by the config file.
         """
         conf_map = _conf_map.copy()
         for section, conf_class in conf_map.items():
