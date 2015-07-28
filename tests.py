@@ -840,7 +840,7 @@ class TestExceptions(BaseTestCase):
         exc = UnrecognizedKeyError(section=None, key='foo', new_value='bar')
         assert str(exc) == \
             "config file provides key 'foo' with value 'bar' but key 'foo' " \
-            "is not defined in the config class"
+            "is not defined in any of the config classes"
 
     def test_required_key_error(self):
         exc = RequiredKeyError(None, key="foo")

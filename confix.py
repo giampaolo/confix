@@ -137,12 +137,14 @@ class UnrecognizedKeyError(Error):
         self.new_value = new_value
 
     def __str__(self):
-        plural = "es" if _has_multi_conf_classes() else ""
+        if not _has_multi_conf_classes() and _conf_map:
+            klass = _conf_map[None]
+            txt = "config class %s.%s" % (klass.__module__, klass.__name__)
+        else:
+            txt = "any of the config classes"
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return \
-            "config file provides key %r with value %r but key %r is not " \
-            "defined in the config class%s" % (
-                key, self.new_value, key, plural)
+        return "config file provides key %r with value %r but key %r is " \
+               "not defined in %s" % (key, self.new_value, key, txt)
 
 
 class RequiredKeyError(Error):
@@ -156,9 +158,8 @@ class RequiredKeyError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return \
-            "configuration class requires %r key to be specified via config " \
-            "file or environment variable" % (key)
+        return "configuration class requires %r key to be specified via " \
+               "config file or environment variable" % (key)
 
 
 class TypesMismatchError(Error):
@@ -175,11 +176,9 @@ class TypesMismatchError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return \
-            "type mismatch for key %r (default_value=%r, %s) got %r " \
-            "(%s)" % (
-                key, self.default_value, type(self.default_value),
-                self.new_value, type(self.new_value))
+        return "type mismatch for key %r (default_value=%r, %s) got %r " \
+               "(%s)" % (key, self.default_value, type(self.default_value),
+                         self.new_value, type(self.new_value))
 
 
 # =============================================================================
@@ -367,9 +366,9 @@ def register(section=None):
                             "against a class (got %r)" % klass)
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         with _lock_ctx():
-            klass = add_metaclass(klass)
-            _conf_map[section] = klass
-        return klass
+            new_class = add_metaclass(klass)
+            _conf_map[section] = new_class
+        return new_class
 
     with _lock_ctx():
         if section in _conf_map:
