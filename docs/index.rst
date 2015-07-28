@@ -25,7 +25,7 @@ Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then overwrite its attributes from a static configuration file (be it
 YAML, JSON, INI or TOML) and / or via
-`environment variables <http://pythonhosted.org/confix#override-a-key-via-environment-variable>`_.
+`environment variables <#override-a-key-via-environment-variable>`_.
 This is useful to avoid storing sensitive data (e.g. passwords) in the source
 code and validate configuration on startup (via validators, mandatory
 attributes and type checking).
@@ -713,7 +713,8 @@ configuration class(es) must have sections.
     confix.Error: can't parse ini files if a sectionless configuration class has been registered
 
 This means that if you have an INI file you must define
-`multiple configuration classes <http://pythonhosted.org/confix#multiple-configuration-classes>`_, each one with a different section name.
+`multiple configuration classes <#multiple-configuration-classes>`_,
+each one with a different section name.
 
 
 Supporting other file formats

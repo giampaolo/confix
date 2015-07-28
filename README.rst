@@ -22,8 +22,6 @@
     :target: https://pypi.python.org/pypi/confix/
     :alt: License
 
-**Warning**: this is beta software and its API might be subject to change between versions
-
 Confix
 ======
 
@@ -86,7 +84,7 @@ For more examples see `docs <http://pythonhosted.org/confix>`_.
 Main features
 -------------
 
-- supports **YAML, JSON**, **INI** and **TOML** serialization formats.
+- supports **YAML, **JSON**, **INI** and **TOML** serialization formats.
 - can be easily extended to support other formats.
 - support for Python 3
 - small code base
@@ -107,4 +105,5 @@ Main features
 Status
 ------
 
-Still beta.
+Code is solid and fully tested (100% coverage). Its API may change (break)
+between major versions though.
