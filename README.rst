@@ -6,6 +6,10 @@
     :target: https://travis-ci.org/giampaolo/confix
     :alt: Linux tests (Travis)
 
+.. image:: https://ci.appveyor.com/api/projects/status/kmkc7f7muvrcr8oq?svg=true
+    :target: https://ci.appveyor.com/project/giampaolo/confix
+    :alt: Windows tests (Appveyor)
+
 .. image:: https://coveralls.io/repos/giampaolo/confix/badge.svg?branch=master&service=github
     :target: https://coveralls.io/github/giampaolo/confix?branch=master
     :alt: Test coverage (coverall.io)

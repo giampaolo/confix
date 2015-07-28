@@ -82,7 +82,7 @@ flake8:
 upload-src: clean
 	$(PYTHON) setup.py sdist upload
 
-# Build and upload doc on https://pythonhosted.org/psutil/.
+# Build and upload doc on https://pythonhosted.org/confix/.
 # Requires "pip install sphinx-pypi-upload".
 upload-doc:
 	cd docs; make html
