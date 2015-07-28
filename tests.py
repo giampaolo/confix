@@ -843,7 +843,7 @@ class TestExceptions(BaseTestCase):
             "is not defined in the config class"
 
     def test_required_key_error(self):
-        exc = RequiredKeyError(key="foo")
+        exc = RequiredKeyError(None, key="foo")
         assert str(exc) == \
             "configuration class requires 'foo' key to be specified via " \
             "config file or environment variable"

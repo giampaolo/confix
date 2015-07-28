@@ -44,8 +44,8 @@ version_info = tuple([int(num) for num in __version__.split('.')])
 _PY3 = sys.version_info >= (3, )
 # TODO: these are currently treated as case-insensitive; instead we should
 # do "True", "TRUE" etc and ignore "TrUe".
-_BOOL_TRUE = set(("1", "yes", "true", "on"))
-_BOOL_FALSE = set(("0", "no", "false", "off"))
+_STR_BOOL_TRUE = set(("1", "yes", "true", "on"))
+_STR_BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")
 _DEFAULT = object()
 _threading_lock = threading.Lock()
@@ -131,16 +131,15 @@ class UnrecognizedKeyError(Error):
     is not defined by the default configuration class.
     """
 
-    def __init__(self, section, key, new_value, msg=None):
+    def __init__(self, section, key, new_value):
         self.section = section
         self.key = key
         self.new_value = new_value
-        self.msg = msg
 
     def __str__(self):
         plural = "es" if _has_multi_conf_classes() else ""
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return self.msg or \
+        return \
             "config file provides key %r with value %r but key %r is not " \
             "defined in the config class%s" % (
                 key, self.new_value, key, plural)
@@ -151,14 +150,13 @@ class RequiredKeyError(Error):
     via schema(required=True).
     """
 
-    def __init__(self, key, section=None, msg=None):
-        self.key = key
-        self.msg = msg
+    def __init__(self, section, key):
         self.section = section
+        self.key = key
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return self.msg or \
+        return \
             "configuration class requires %r key to be specified via config " \
             "file or environment variable" % (key)
 
@@ -169,16 +167,15 @@ class TypesMismatchError(Error):
     class.
     """
 
-    def __init__(self, section, key, default_value, new_value, msg=None):
+    def __init__(self, section, key, default_value, new_value):
         self.section = section
         self.key = key
         self.default_value = default_value
         self.new_value = new_value
-        self.msg = msg
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return self.msg or \
+        return \
             "type mismatch for key %r (default_value=%r, %s) got %r " \
             "(%s)" % (
                 key, self.default_value, type(self.default_value),
@@ -515,9 +512,9 @@ class _Parser:
         if isinstance(default_value, schema):
             default_value = default_value.default
         if isinstance(default_value, bool):
-            if new_value.lower() in _BOOL_TRUE:
+            if new_value.lower() in _STR_BOOL_TRUE:
                 new_value = True
-            elif new_value.lower() in _BOOL_FALSE:
+            elif new_value.lower() in _STR_BOOL_FALSE:
                 new_value = False
             else:
                 if self.type_check:
@@ -661,7 +658,7 @@ class _Parser:
                 if isinstance(value, schema):
                     schema_ = value
                     if schema_.required:
-                        raise RequiredKeyError(key, section=section)
+                        raise RequiredKeyError(section, key)
                     if schema_.validator is not None:
                         _Parser.run_validators(schema_, section, key, value)
                     setattr(conf_class, key, value.default)
