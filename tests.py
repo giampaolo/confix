@@ -811,6 +811,7 @@ class TestSchema(BaseTestCase):
         self.assertRaisesRegexp(
             TypeError, "not callable", schema, default=10, validator=['foo'])
 
+
 # ===================================================================
 # exception classes tests
 # ===================================================================
@@ -862,7 +863,6 @@ class TestExceptions(BaseTestCase):
 
 
 class TestGetParsedConf(BaseTestCase):
-
     def test_root_only(self):
         @register()
         class root_conf:
