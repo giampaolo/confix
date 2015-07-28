@@ -15,7 +15,7 @@ import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
 
 import confix
-from confix import Error, UnrecognizedKeyError, RequiredKeyError
+from confix import Error, UnrecognizedKeyError, RequiredSettingKeyError
 from confix import istrue, isin, isnotin, isemail, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
@@ -223,7 +223,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(bar=2)
         )
-        with self.assertRaises(RequiredKeyError) as cm:
+        with self.assertRaises(RequiredSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
         assert cm.exception.key == 'foo'
@@ -840,20 +840,20 @@ class TestExceptions(BaseTestCase):
     def test_unrecognized_key_error(self):
         exc = UnrecognizedKeyError(section=None, key='foo', new_value='bar')
         assert str(exc) == \
-            "config file provides key 'foo' with value 'bar' but key 'foo' " \
-            "is not defined in any of the config classes"
+            "config file provides setting key 'foo' with value 'bar' but " \
+            "setting key 'foo' is not defined in any of the config classes"
 
     def test_required_key_error(self):
-        exc = RequiredKeyError(None, key="foo")
+        exc = RequiredSettingKeyError(None, key="foo")
         assert str(exc) == \
-            "configuration class requires 'foo' key to be specified via " \
-            "config file or environment variable"
+            "configuration class requires 'foo' setting key to be specified " \
+            "via config file or environment variable"
 
     def test_types_mismatch_error(self):
         exc = TypesMismatchError(
             section=None, key="foo", default_value=1, new_value='bar')
         assert str(exc) == \
-            "type mismatch for key 'foo' (default_value=1, %s) got " \
+            "type mismatch for setting key 'foo' (default_value=1, %s) got " \
             "'bar' (%s)" % (type(1), type(""))
 
 
@@ -991,7 +991,8 @@ class TestRegister(BaseTestCase):
                 bar = 2
 
         assert "previously registered root class" in str(cm.exception)
-        assert "already defines a key with the same name" in str(cm.exception)
+        assert "already defines a section with the same name" \
+            in str(cm.exception)
 
     def test_register_after_parse(self):
         @register()

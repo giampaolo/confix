@@ -66,19 +66,19 @@ API reference
 
 .. class:: UnrecognizedKeyError
 
-    Raised on parse if the configuration file defines a key which is not
-    defined by the default configuration class.
+    Raised on parse if the configuration file defines a setting key which is
+    not defined by the default configuration class.
     You're not supposed to catch this but instead fix the configuration file.
 
-.. class:: RequiredKeyError
+.. class:: RequiredSettingKeyError
 
-    Raised when the configuration file doesn't specify a key which was required
+    Raised when the configuration file doesn't specify a setting key which was required
     via ``schema(required=True)``.
     You're not supposed to catch this but instead fix the configuration file.
 
 .. class:: TypesMismatchError
 
-    Raised when configuration file overrides a key having a type which is
+    Raised when configuration file overrides a setting key having a type which is
     different than the original one defined in the configuration class.
     You're not supposed to catch this but instead fix the configuration file.
 
@@ -102,7 +102,7 @@ API reference
 
     A schema can be used to validate configuration key's values or state they
     are mandatory.
-    *default* is the default key value.
+    *default* is the default setting key value.
     If *required* is ``True`` it is mandatory for the configuration file (or
     the environment variable) to specify that key.
     *validator* is a function or a list of functions which will be called for
@@ -132,10 +132,10 @@ API reference
     It must be noted that environment variables take precedence over the
     configuration file (if specified).
     Only upper cased environment variables are taken into account.
-    By default (``case_sensitive=False``) environment variable ``"FOO"`` will override a key with the same name in a non case sensitive fashion
+    By default (``case_sensitive=False``) environment variable ``"FOO"`` will override a setting key with the same name in a non case sensitive fashion
     (``'foo'``, ``'Foo'``, ``'FOO'``, etc.).
     Also multiple "sections" are not supported so if multiple config classes
-    define a key ``'foo'`` all of them will be overwritten.
+    define a setting key ``'foo'`` all of them will be overwritten.
     If *case_sensitive* is ``True`` then it is supposed that the config
     class(es) define all upper cased keys.
 
@@ -169,7 +169,7 @@ Validators are simple utility functions which can be used with
 Usage by examples
 =================
 
-Override a key via configuration file
+Override a setting key via configuration file
 -------------------------------------
 
 python file:
@@ -210,7 +210,7 @@ Things to note:
    (``config.name``).
 
 
-Override a key via environment variables
+Override a setting key via environment variables
 ----------------------------------------
 
 python file:
@@ -239,8 +239,7 @@ shell:
 
 Things to note:
  - ``"PASSWORD"`` environment variable changed the value of ``"password"``
-   class attribute.
-   key which is treated in a case insensitive fashion.
+   class attribute which is treated in a case insensitive fashion.
  - to change this behavior use ``parse_with_envvars(case_sensitive=True))``
    but in that case also the class attributed must be upper case
    (``"PASSWORD"``).
@@ -296,10 +295,10 @@ Errors: configuration definition
 --------------------------------
 
 One of the key features of confix is that the config class is a definition of
-all your app configuration. If the configuration file declares a key which is
-not defined in the config class confix will error out. This is useful in case
-you made a typo in your configuration file: failing sooner (application
-startup) rather than later is better.
+all your app configuration. If the configuration file declares a setting key
+which is not defined in the config class confix will error out.
+This is useful in case you made a typo in your configuration file: failing
+sooner (application startup) rather than later is better.
 
 .. code-block:: python
 
@@ -336,20 +335,20 @@ shell:
         section=None)
       File "/home/giampaolo/svn/confix/confix.py", line 393, in process_pair
         raise UnrecognizedKeyError(key, new_value, section=section)
-    confix.UnrecognizedKeyError: configuration file provides key 'host' with value 'localhost' but key 'host' is not defined in the config class
+    confix.UnrecognizedKeyError: configuration file provides setting key 'host' with value 'localhost' but setting key 'host' is not defined in the config class
 
 Things to note:
- - key ``'host'`` was specified in the configuration file but not in the default
-   config class.
+ - setting key ``'host'`` was specified in the configuration file but not in
+   the default config class.
 
 
 Errors: types checking
 ----------------------
 
-Each key in the config class (may) have a default value. By default confix will
-raise an exception if the value overwritten by the configuration file (or
-environment variable) has a different type. This can be disabled with
-``parse('config.yaml', type_check=False)``.
+Each setting key in the config class (may) have a default value.
+By default  confix will raise an exception if the value overwritten by the
+configuration file (or environment variable) has a different type. This can be
+disabled with ``parse('config.yaml', type_check=False)``.
 
 python file:
 
@@ -389,7 +388,7 @@ shell:
         section=None)
       File "/home/giampaolo/svn/confix/confix.py", line 415, in process_pair
         section=section)
-    confix.TypesMismatchError: type mismatch for key 'port' (default_value=80) got 'foo'
+    confix.TypesMismatchError: type mismatch for setting key 'port' (default_value=80) got 'foo'
 
 
 Required arguments
@@ -435,7 +434,7 @@ shell:
         self.run_last_schemas()
       File "/home/giampaolo/svn/confix/confix.py", line 449, in run_last_schemas
         raise RequiredKeyError(key, section=section)
-    confix.RequiredKeyError: configuration class requires 'password' key to be specified via configuration file or environment variable
+    confix.RequiredKeyError: configuration class requires 'password' setting key to be specified via configuration file or environment variable
     $
     $ PASSWORD=secret python main.py
     secret
@@ -481,7 +480,7 @@ shell:
         section=None)
       File "/home/giampaolo/svn/confix/confix.py", line 434, in process_pair
         raise exc
-    confix.ValidationError: 'password' key with value 'foo' didn't pass validation
+    confix.ValidationError: 'password' setting key with value 'foo' didn't pass validation
     $
     $ PASSWORD=longpassword python main.py
     longpassword
@@ -520,7 +519,7 @@ code.
         self.run_last_schemas()
       File "/home/giampaolo/svn/confix/confix.py", line 664, in run_last_schemas
         raise RequiredKeyError(key, section=section)
-    confix.RequiredKeyError: configuration class requires 'password' key to be specified via configuration file or environment variable
+    confix.RequiredKeyError: configuration class requires 'password' setting key to be specified via configuration file or environment variable
 
 
 Default validators
@@ -645,7 +644,7 @@ shell:
 
 Things to note:
  - if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
-   environment variable via cmdline ``username`` key of both config classes
+   environment variable via cmdline ``username`` setting key of both config classes
    would have been overwritten.
  - we may also have defined a third "root" config class, with no section.
 

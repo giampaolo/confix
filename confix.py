@@ -33,10 +33,10 @@ __all__ = [
     'isemail', 'isin', 'isnotin', 'istrue',
     # exceptions
     'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
-    'RequiredKeyError', 'TypesMismatchError', 'UnrecognizedKeyError',
+    'RequiredSettingKeyError', 'TypesMismatchError', 'UnrecognizedKeyError',
     'AlreadyRegisteredError',
 ]
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 version_info = tuple([int(num) for num in __version__.split('.')])
@@ -89,7 +89,8 @@ class ValidationError(Error):
     def __str__(self):
         key = "'%s.%s'" % (self.section, self.key) if self.section else \
             repr(self.key)
-        msg = "%s key with value %r didn't pass validation" % (key, self.value)
+        msg = "%s setting key with value %r didn't pass validation" % (
+            key, self.value)
         if self.msg:
             msg += "; %s" % self.msg
         return msg
@@ -127,8 +128,8 @@ class NotParsedError(Error):
 
 
 class UnrecognizedKeyError(Error):
-    """Raised on parse if the configuration file defines a key which
-    is not defined by the default configuration class.
+    """Raised on parse if the configuration file defines a setting key
+    which is not defined by the default configuration class.
     """
 
     def __init__(self, section, key, new_value):
@@ -143,13 +144,14 @@ class UnrecognizedKeyError(Error):
         else:
             txt = "any of the config classes"
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return "config file provides key %r with value %r but key %r is " \
-               "not defined in %s" % (key, self.new_value, key, txt)
+        return ("config file provides setting key %r with value %r but "
+                "setting key %r is not defined in %s" % (
+                    key, self.new_value, key, txt))
 
 
-class RequiredKeyError(Error):
-    """Raised when the config file doesn't specify a key which was required
-    via schema(required=True).
+class RequiredSettingKeyError(Error):
+    """Raised when the config file doesn't specify a setting key which
+    was required via schema(required=True).
     """
 
     def __init__(self, section, key):
@@ -158,14 +160,14 @@ class RequiredKeyError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return "configuration class requires %r key to be specified via " \
-               "config file or environment variable" % (key)
+        return "configuration class requires %r setting key to be specified " \
+               "via config file or environment variable" % (key)
 
 
 class TypesMismatchError(Error):
-    """Raised when config file overrides a key having a type which
-    is different than the original one defined in the configuration
-    class.
+    """Raised when config file overrides a setting key having a type
+    which is different than the original one defined in the
+    configuration class.
     """
 
     def __init__(self, section, key, default_value, new_value):
@@ -176,9 +178,9 @@ class TypesMismatchError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return "type mismatch for key %r (default_value=%r, %s) got %r " \
-               "(%s)" % (key, self.default_value, type(self.default_value),
-                         self.new_value, type(self.new_value))
+        return "type mismatch for setting key %r (default_value=%r, %s) got " \
+               "%r (%s)" % (key, self.default_value, type(self.default_value),
+                            self.new_value, type(self.new_value))
 
 
 # =============================================================================
@@ -388,8 +390,8 @@ def register(section=None):
             if section in root_conf_class:
                 raise Error(
                     "attempting to register section %r when previously "
-                    "registered root class %r already defines a key with the "
-                    "same name" % (section, root_conf_class))
+                    "registered root class %r already defines a section with "
+                    "the same name" % (section, root_conf_class))
 
     if section is not None and not isinstance(section, basestring):
         raise TypeError("invalid section; expected either string or None, "
@@ -484,7 +486,8 @@ class _Parser:
 
     def update_conf_from_envvars(self):
         """Iterate over all process env vars and return a dict() of
-        env vars whose name match they keys defined by conf class.
+        env vars whose name match they setting keys defined by conf
+        class.
         """
         conf_map = _conf_map.copy()
         env = os.environ.copy()
@@ -570,9 +573,9 @@ class _Parser:
         self.run_last_schemas()
 
     def process_pair(self, section, key, new_value, conf_class):
-        """Given a key / value pair extracted either from the config
-        file or env vars process it (validate it) and override the
-        config class original key value.
+        """Given a setting key / value pair extracted either from the
+        config file or env vars process it (validate it) and override
+        the config class original key value.
         """
         try:
             # The default value defined in the conf class.
@@ -599,14 +602,14 @@ class _Parser:
 
         # Finally replace key value.
         sec_key = key if section is None else "%s.%s" % (section, key)
-        _log("overriding key %r (value=%r) to new value %r".format(
+        _log("overriding setting key %r (value=%r) to new value %r".format(
             sec_key, default_value, new_value))
         setattr(conf_class, key, new_value)
 
     def check_type(self, section, key, default_value, new_value):
         """Raise TypesMismatchError if config file or env var wants to
-        override a key with a type which is different than the original
-        one defined in the conf class.
+        override a setting key with a type which is different than the
+        original one defined in the config class.
         """
         doit = (self.type_check and
                 default_value is not None and
@@ -657,7 +660,7 @@ class _Parser:
                 if isinstance(value, schema):
                     schema_ = value
                     if schema_.required:
-                        raise RequiredKeyError(section, key)
+                        raise RequiredSettingKeyError(section, key)
                     if schema_.validator is not None:
                         _Parser.run_validators(schema_, section, key, value)
                     setattr(conf_class, key, value.default)
@@ -696,12 +699,12 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
     (if specified).
     Only upper cased environment variables are taken into account.
     By default (case_sensitive=False) env var "FOO" will override a
-    key with the same name in a non case sensitive fashion ('foo',
-    'Foo', 'FOO', etc.).
+    setting key with the same name in a non case sensitive fashion
+    ('foo', 'Foo', 'FOO', etc.).
     Also "sections" are not supported so if multiple config classes
-    define a key "foo" all of them will be overwritten.
+    define a setting key "foo" all of them will be overwritten.
     If `case_sensitive` is True then it is supposed that the config
-    class(es) define all upper cased keys.
+    class(es) define all upper cased setting keys.
     """
     with _lock_ctx():
         _Parser(conf_file=conf_file,
