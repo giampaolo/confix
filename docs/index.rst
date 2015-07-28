@@ -64,7 +64,7 @@ API reference
     Raised when :func:`confix.get_parsed_conf()` is called but
     :func:`confix.parse() has not been called yet.
 
-.. class:: UnrecognizedKeyError
+.. class:: UnrecognizedSettingKeyError
 
     Raised on parse if the configuration file defines a setting key which is
     not defined by the default configuration class.
@@ -334,8 +334,8 @@ shell:
       File "/home/giampaolo/svn/confix/confix.py", line 378, in process_conf
         section=None)
       File "/home/giampaolo/svn/confix/confix.py", line 393, in process_pair
-        raise UnrecognizedKeyError(key, new_value, section=section)
-    confix.UnrecognizedKeyError: configuration file provides setting key 'host' with value 'localhost' but setting key 'host' is not defined in the config class
+        raise UnrecognizedSettingKeyError(key, new_value, section=section)
+    confix.UnrecognizedSettingKeyError: configuration file provides setting key 'host' with value 'localhost' but setting key 'host' is not defined in the config class
 
 Things to note:
  - setting key ``'host'`` was specified in the configuration file but not in
