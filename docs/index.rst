@@ -24,7 +24,8 @@ About
 Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then overwrite its attributes from a static configuration file (be it
-YAML, JSON, INI or TOML) and / or via environment variables.
+YAML, JSON, INI or TOML) and / or via
+`environment variables <http://pythonhosted.org/confix#override-a-key-via-environment-variable>`_.
 This is useful to avoid storing sensitive data (e.g. passwords) in the source
 code and validate configuration on startup (via validators, mandatory
 attributes and type checking).
@@ -67,19 +68,19 @@ API reference
 
     Raised on parse if the configuration file defines a key which is not
     defined by the default configuration class.
-    You're not supposed to catch this but instead fix the config file.
+    You're not supposed to catch this but instead fix the configuration file.
 
 .. class:: RequiredKeyError
 
-    Raised when the config file doesn't specify a key which was required
+    Raised when the configuration file doesn't specify a key which was required
     via ``schema(required=True)``.
-    You're not supposed to catch this but instead fix the config file.
+    You're not supposed to catch this but instead fix the configuration file.
 
 .. class:: TypesMismatchError
 
-    Raised when config file overrides a key having a type which is different
-    than the original one defined in the configuration class.
-    You're not supposed to catch this but instead fix the config file.
+    Raised when configuration file overrides a key having a type which is
+    different than the original one defined in the configuration class.
+    You're not supposed to catch this but instead fix the configuration file.
 
 **Functions**
 
@@ -89,7 +90,7 @@ API reference
     later.
     If *section* is ``None`` it is assumed that the configuration file will not
     be split in sub-sections otherwise *section* is the name of a specific
-    section which will be referenced by the config file.
+    section which will be referenced by the configuration file.
     All class attributes starting with an underscore will be ignored, same
     for methods, classmethods or any other non-callable type.
     A class decoratored with this method becomes dict()-able.
@@ -102,8 +103,8 @@ API reference
     A schema can be used to validate configuration key's values or state they
     are mandatory.
     *default* is the default key value.
-    If *required* is ``True`` it is mandatory for the config file (or the
-    env var) to specify that key.
+    If *required* is ``True`` it is mandatory for the configuration file (or
+    the environment variable) to specify that key.
     *validator* is a function or a list of functions which will be called for
     validating the overridden value.
     A validator function will fail if it returns ``False`` or raise
@@ -128,12 +129,11 @@ API reference
 
     Same as :func:`confix.parse()` but also takes environment variables into
     account.
-    It must be noted that env vars take precedence over the config file
-    (if specified).
+    It must be noted that environment variables take precedence over the
+    configuration file (if specified).
     Only upper cased environment variables are taken into account.
-    By default (``case_sensitive=False``) env var ``"FOO"`` will override a
-    key with the same name in a non case sensitive fashion (``'foo'``,
-    ``'Foo'``, ``'FOO'``, etc.).
+    By default (``case_sensitive=False``) environment variable ``"FOO"`` will override a key with the same name in a non case sensitive fashion
+    (``'foo'``, ``'Foo'``, ``'FOO'``, etc.).
     Also multiple "sections" are not supported so if multiple config classes
     define a key ``'foo'`` all of them will be overwritten.
     If *case_sensitive* is ``True`` then it is supposed that the config
@@ -188,7 +188,7 @@ python file:
     print(config.username)
     print(config.password)
 
-config file:
+configuration file:
 
 .. code-block:: yaml
 
@@ -204,14 +204,14 @@ shell:
     secret
 
 Things to note:
- - ``password`` got changed by config file.
+ - ``password`` got changed by configuration file.
  - ``parse()`` did the trick.
  - configuration fields ("keys") can be accessed as attributes
    (``config.name``).
 
 
-Override a key via environment variable
----------------------------------------
+Override a key via environment variables
+----------------------------------------
 
 python file:
 
@@ -238,7 +238,8 @@ shell:
     secret
 
 Things to note:
- - ``"PASSWORD"`` env var changed the value of ``"password"`` configuration
+ - ``"PASSWORD"`` environment variable changed the value of ``"password"``
+   class attribute.
    key which is treated in a case insensitive fashion.
  - to change this behavior use ``parse_with_envvars(case_sensitive=True))``
    but in that case also the class attributed must be upper case
@@ -286,16 +287,17 @@ shell:
     localhost
 
 Things to note:
- - ``"password"`` was specified in the config file but also by the env var
-   and this takes precedence over the config file.
+ - ``"password"`` was specified in the configuration file but also by the
+   environment variable and this takes precedence over the configuration file.
 
 Errors: configuration definition
 --------------------------------
 
 One of the key features of confix is that the config class is a definition of
-all your app configuration. If the config file declares a key which is not
-defined in the config class confix will error out. This is useful in case you
-made a typo in your config file.
+all your app configuration. If the configuration file declares a key which is
+not defined in the config class confix will error out. This is useful in case
+you made a typo in your configuration file: failing sooner (application
+startup) rather than later is better.
 
 .. code-block:: python
 
@@ -309,7 +311,7 @@ made a typo in your config file.
 
     parse()
 
-config file:
+configuration file:
 
 .. code-block:: yaml
 
@@ -332,18 +334,18 @@ shell:
         section=None)
       File "/home/giampaolo/svn/confix/confix.py", line 393, in process_pair
         raise UnrecognizedKeyError(key, new_value, section=section)
-    confix.UnrecognizedKeyError: config file provides key 'host' with value 'localhost' but key 'host' is not defined in the config class
+    confix.UnrecognizedKeyError: configuration file provides key 'host' with value 'localhost' but key 'host' is not defined in the config class
 
 Things to note:
- - key ``'host'`` was specified in the config file but not in the default
+ - key ``'host'`` was specified in the configuration file but not in the default
    config class.
 
 Errors: types checking
 ----------------------
 
 Each key in the config class (may) have a default value. By default confix will
-raise an exception if the value overwritten by the config file (or env var) has
-a different type. This can be disabled with
+raise an exception if the value overwritten by the configuration file (or
+environment variable) has a different type. This can be disabled with
 ``parse('config.yaml', type_check=False)``.
 
 python file:
@@ -360,7 +362,7 @@ python file:
 
     parse('config.yaml')
 
-config file:
+configuration file:
 
 .. code-block:: yaml
 
@@ -391,7 +393,7 @@ Required arguments
 ------------------
 
 You can force certain arguments to be required, meaning they *have* to be
-specified via config file or environment variable.
+specified via configuration file or environment variable.
 
 python file:
 
@@ -408,7 +410,7 @@ python file:
     parse_with_envvars('config.yaml')
     print(config.password)
 
-config file:
+configuration file:
 
 .. code-block:: yaml
 
@@ -430,7 +432,7 @@ shell:
         self.run_last_schemas()
       File "/home/giampaolo/svn/confix/confix.py", line 449, in run_last_schemas
         raise RequiredKeyError(key, section=section)
-    confix.RequiredKeyError: configuration class requires 'password' key to be specified via config file or env var
+    confix.RequiredKeyError: configuration class requires 'password' key to be specified via configuration file or environment variable
     $
     $ PASSWORD=secret python main.py
     secret
@@ -439,8 +441,8 @@ Validators
 ----------
 
 A validator is function which is called to validate the value overridden by the
-config file (or env var). If the function returns ``False`` or raise
-``confix.ValidationError`` the validation will fail.
+configuration file (or environment variable). If the function returns ``False``
+or raise ``confix.ValidationError`` the validation will fail.
 In this example we provide a validator which checks the password length.
 Also, it's ``required``.
 
@@ -484,8 +486,9 @@ Marking keys as mandatory
 -------------------------
 
 Certain keys can be marked as mandatory, meaning if they are not specified in
-the config file (or via env var) confix will error out. This is useful to avoid
-storing sensitive data (e.g. passwords) in the source code.
+the configuration file (or via environment variable) confix will error out.
+This is useful to avoid storing sensitive data (e.g. passwords) in the source
+code.
 
 .. code-block:: python
 
@@ -512,7 +515,7 @@ storing sensitive data (e.g. passwords) in the source code.
         self.run_last_schemas()
       File "/home/giampaolo/svn/confix/confix.py", line 664, in run_last_schemas
         raise RequiredKeyError(key, section=section)
-    confix.RequiredKeyError: configuration class requires 'password' key to be specified via config file or environment variable
+    confix.RequiredKeyError: configuration class requires 'password' key to be specified via configuration file or environment variable
 
 Default validators
 ------------------
@@ -566,8 +569,8 @@ Multiple configuration classes
 ==============================
 
 You may want to do this in case you have an app with different components and
-you want to control everything from a single config file having different
-sections.
+you want to control everything from a single configuration file having
+different sections.
 Example:
 
 python file:
@@ -597,7 +600,7 @@ python file:
     print(http_config.port)
     print(http_config.username)
 
-config file:
+configuration file:
 
 .. code-block:: yaml
 
@@ -619,8 +622,8 @@ shell:
 
 Things to note:
  - if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
-   env var via cmdline ``username`` key of both config classes would have been
-   overwritten.
+   environment variable via cmdline ``username`` key of both config classes
+   would have been overwritten.
  - we may also have defined a third "root" config class, with no section.
 
 Notes about @register
