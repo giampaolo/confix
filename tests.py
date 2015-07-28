@@ -15,7 +15,7 @@ import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
 
 import confix
-from confix import Error, UnrecognizedKeyError, RequiredSettingKeyError
+from confix import Error, UnrecognizedSettingKeyError, RequiredSettingKeyError
 from confix import istrue, isin, isnotin, isemail, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
@@ -144,7 +144,7 @@ class BaseMixin(object):
         self.dict_to_file(
             dict(foo=5, apple=6)
         )
-        with self.assertRaises(UnrecognizedKeyError) as cm:
+        with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
         assert cm.exception.key, 'apple'
@@ -478,7 +478,7 @@ class BaseMixin(object):
         self.dict_to_file({
             'http': dict(username='bar'),
         })
-        with self.assertRaises(UnrecognizedKeyError) as cm:
+        with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.key == 'http'
         assert cm.exception.new_value == dict(username='bar')
@@ -497,7 +497,7 @@ class BaseMixin(object):
         self.dict_to_file({
             'ftp': dict(password='bar'),
         })
-        with self.assertRaises(UnrecognizedKeyError) as cm:
+        with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.key == 'password'
         assert cm.exception.new_value == 'bar'
@@ -838,7 +838,8 @@ class TestExceptions(BaseTestCase):
         assert 'not parsed' in str(exc)
 
     def test_unrecognized_key_error(self):
-        exc = UnrecognizedKeyError(section=None, key='foo', new_value='bar')
+        exc = UnrecognizedSettingKeyError(
+            section=None, key='foo', new_value='bar')
         assert str(exc) == \
             "config file provides setting key 'foo' with value 'bar' but " \
             "setting key 'foo' is not defined in any of the config classes"

@@ -33,8 +33,8 @@ __all__ = [
     'isemail', 'isin', 'isnotin', 'istrue',
     # exceptions
     'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
-    'RequiredSettingKeyError', 'TypesMismatchError', 'UnrecognizedKeyError',
-    'AlreadyRegisteredError',
+    'RequiredSettingKeyError', 'TypesMismatchError', 'AlreadyRegisteredError',
+    'UnrecognizedSettingKeyError',
 ]
 __version__ = '0.2.1'
 __author__ = 'Giampaolo Rodola'
@@ -127,7 +127,7 @@ class NotParsedError(Error):
 # --- exceptions raised on parse()
 
 
-class UnrecognizedKeyError(Error):
+class UnrecognizedSettingKeyError(Error):
     """Raised on parse if the configuration file defines a setting key
     which is not defined by the default configuration class.
     """
@@ -567,7 +567,7 @@ class _Parser:
                 try:
                     conf_class = conf_map[None]
                 except KeyError:
-                    raise UnrecognizedKeyError(None, key, new_value)
+                    raise UnrecognizedSettingKeyError(None, key, new_value)
                 self.process_pair(section, key, new_value, conf_class)
 
         self.run_last_schemas()
@@ -583,7 +583,7 @@ class _Parser:
         except AttributeError:
             # Conf file defines a key which does not exist in the
             # conf class.
-            raise UnrecognizedKeyError(section, key, new_value)
+            raise UnrecognizedSettingKeyError(section, key, new_value)
 
         # Cast values for ini files (which only support string type).
         if self.file_ext == '.ini':
