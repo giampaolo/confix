@@ -41,10 +41,12 @@ Confix is a language-agnostic configuration parser for Python.
 It lets you define the default configuration of an app as a standard Python
 class, then overwrite its attributes from a static configuration file (be it
 YAML, JSON, INI or TOML) and / or via
-`environment variables <http://pythonhosted.org/confix#override-a-key-via-environment-variable>`_.
-This is useful to avoid storing sensitive data (e.g. passwords) in the source
-code and validate configuration on startup (via validators, mandatory
-attributes and type checking).
+`environment variables <http://pythonhosted.org/confix/#override-a-key-via-environment-variables>`_.
+In doing so it validates the overridden settings by:
+
+- making sure they are of the same type
+- (optional) marking them as mandatory (useful for passwords)
+- (optional) validating them via a callable
 
 Example:
 

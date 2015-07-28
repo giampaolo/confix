@@ -433,7 +433,7 @@ class _Parser:
         self.file_parser = file_parser
         self.type_check = type_check
         self.envvar_case_sensitive = envvar_case_sensitive
-        self.file_ext = False
+        self.file_ext = None
 
         self.new_conf = self.get_conf_from_file()
         if parse_envvars:
