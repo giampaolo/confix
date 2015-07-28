@@ -245,6 +245,7 @@ Things to note:
    but in that case also the class attributed must be upper case
    (``"PASSWORD"``).
 
+
 Using configuration file and environment variables
 --------------------------------------------------
 
@@ -289,6 +290,7 @@ shell:
 Things to note:
  - ``"password"`` was specified in the configuration file but also by the
    environment variable and this takes precedence over the configuration file.
+
 
 Errors: configuration definition
 --------------------------------
@@ -339,6 +341,7 @@ shell:
 Things to note:
  - key ``'host'`` was specified in the configuration file but not in the default
    config class.
+
 
 Errors: types checking
 ----------------------
@@ -437,6 +440,7 @@ shell:
     $ PASSWORD=secret python main.py
     secret
 
+
 Validators
 ----------
 
@@ -482,6 +486,7 @@ shell:
     $ PASSWORD=longpassword python main.py
     longpassword
 
+
 Marking keys as mandatory
 -------------------------
 
@@ -517,6 +522,7 @@ code.
         raise RequiredKeyError(key, section=section)
     confix.RequiredKeyError: configuration class requires 'password' key to be specified via configuration file or environment variable
 
+
 Default validators
 ------------------
 
@@ -535,6 +541,23 @@ them:
         password = schema(None, mandatory=True,
                           validator=isnotin(['12345', 'password']))
         email = schema('user@domain.com', validator=isemail)
+
+
+Chained validators
+------------------
+
+You can define more than one validator per-schema:
+
+.. code-block:: python
+
+    # main.py
+    from confix import register, schema, isemail, isnotin,
+
+    @register()
+    class config:
+        email = schema('user@domain.com',
+                       validator=[isemail, isnoin(['info@domain.com']))
+
 
 Custom validators
 -----------------
@@ -689,7 +712,9 @@ configuration class(es) must have sections.
         raise Error("can't parse ini files if a sectionless "
     confix.Error: can't parse ini files if a sectionless configuration class has been registered
 
-This means that if you have an INI file you must define multiple configuration classes, each one with a different section name.
+This means that if you have an INI file you must define
+`multiple configuration classes <http://pythonhosted.org/confix#multiple-configuration-classes>`_, each one with a different section name.
+
 
 Supporting other file formats
 -----------------------------
