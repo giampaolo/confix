@@ -30,7 +30,8 @@ __all__ = [
     'register', 'parse', 'parse_with_envvars', 'discard', 'schema',
     'get_parsed_conf',
     # validators
-    'isemail', 'isin', 'isnotin', 'istrue',
+    'isemail', 'isin', 'isnotin', 'istrue', 'isurl', 'isip46', 'isip4',
+    'isip6',
     # exceptions
     'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
     'RequiredSettingKeyError', 'TypesMismatchError', 'AlreadyRegisteredError',
@@ -270,10 +271,56 @@ def isemail(value):
 
 
 def isurl(value):
+    """Assert value is a valid url. This includes urls starting with
+    "http" and "https", IPv4 urls (e.g. "http://127.0.0.1") and
+    optional port (e.g. "http://localhost:8080").
+    """
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
     if re.match(_URL_RE, value) is None:
-        raise ValidationError("not a valid url")
+        raise ValidationError("not a valid URL")
+    return True
+
+
+def isip46(value):
+    import ipaddress  # requires "pip install ipaddress" on python < 3.3
+    if not isinstance(value, basestring):
+        raise ValidationError("expected a string, got %r" % value)
+    if not _PY3 and not isinstance(value, unicode):
+        value = unicode(value)
+    try:
+        if "/" in value:
+            raise ValueError
+        ipaddress.ip_address(value)
+    except ValueError:
+        raise ValidationError("not a valid IP address")
+    return True
+
+
+def isip4(value):
+    if not isinstance(value, basestring):
+        raise ValidationError("expected a string, got %r" % value)
+    octs = value.split('.')
+    try:
+        assert len(octs) == 4
+        for x in octs:
+            x = int(x)
+            assert x >= 0 and x <= 255
+    except (AssertionError, ValueError):
+        raise ValidationError("not a valid IPv4 address")
+    return True
+
+
+def isip6(value):
+    import ipaddress  # requires "pip install ipaddress" on python < 3.3
+    if not isinstance(value, basestring):
+        raise ValidationError("expected a string, got %r" % value)
+    if not _PY3 and not isinstance(value, unicode):
+        value = unicode(value)
+    try:
+        ipaddress.IPv6Address(value)
+    except ValueError:
+        raise ValidationError("not a valid IPv6 address")
     return True
 
 

@@ -172,6 +172,23 @@ Validators are simple utility functions which can be used with
     "https", IPv4 urls (e.g. "http://127.0.0.1") and optional port (e.g.
     "http://localhost:8080").
 
+.. function:: isip4(value)
+
+    Assert value is a valid IPv4 address.
+
+.. function:: isip6(value)
+
+    Assert value is a valid IPv6 address. On python < 3.3 requires
+    `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ module to be
+    installed.
+
+.. function:: isip46(value)
+
+    Assert value is a valid IPv4 or IPv6 address. On python < 3.3 requires
+    `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ module to be
+    installed.
+
+
 Usage by examples
 =================
 
@@ -538,6 +555,7 @@ them:
 
     # main.py
     from confix import register, schema, istrue, isin, isnotin, isemail
+    from confix import isip4, isip6, isip46
 
     @register()
     class config:
@@ -546,6 +564,9 @@ them:
         password = schema(None, mandatory=True,
                           validator=isnotin(['12345', 'password']))
         email = schema('user@domain.com', validator=isemail)
+        ipv4_addr = schema('127.0.0.1', validator=isip4)
+        ipv6_addr = schema('::1', validator=isip6)
+        any_addr = schema('::1', validator=isip46)
 
 
 Chained validators

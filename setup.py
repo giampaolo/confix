@@ -51,8 +51,10 @@ def main():
                   'password'],
         # ...supposed to be installed by user if needed
         extra_requires=dict(
+            ipaddress='ipaddress',
+            toml='toml',
             yaml='PyYAML',
-            toml='toml'),
+        ),
         classifiers=[
             'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',

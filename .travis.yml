@@ -9,6 +9,7 @@ python:
 install:
     - pip install coverage coveralls flake8 pep8 pyyaml toml pytest pytest-cov
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
+    - if [[ $TRAVIS_PYTHON_VERSION < '3.3' ]]; then pip install ipaddress; fi
 script:
     # - py.test -s -v tests.py
     - coverage run tests.py

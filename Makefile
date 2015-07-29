@@ -36,6 +36,7 @@ setup-dev-env: install-git-hooks
 	$(PYTHON) -m pip install --user --upgrade \
 		coverage \
 		flake8 \
+		ipaddress \
 		pep8 \
 		pytest \
 		pytest-cov \

@@ -15,11 +15,28 @@ import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
 
 import confix
-from confix import Error, UnrecognizedSettingKeyError, RequiredSettingKeyError
-from confix import istrue, isin, isnotin, isemail, isurl, get_parsed_conf
-from confix import register, parse, parse_with_envvars, discard, schema
-from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
-from confix import ValidationError, AlreadyRegisteredError
+from confix import AlreadyParsedError
+from confix import AlreadyRegisteredError
+from confix import TypesMismatchError
+from confix import UnrecognizedSettingKeyError
+from confix import ValidationError
+from confix import Error
+from confix import NotParsedError
+from confix import RequiredSettingKeyError
+from confix import discard
+from confix import get_parsed_conf
+from confix import isemail
+from confix import isin
+from confix import isip4
+from confix import isip46
+from confix import isip6
+from confix import isnotin
+from confix import istrue
+from confix import isurl
+from confix import parse
+from confix import parse_with_envvars
+from confix import register
+from confix import schema
 
 
 PY3 = sys.version_info >= (3, )
@@ -744,6 +761,38 @@ class TestValidators(BaseTestCase):
         self.assertRaises(ValidationError, isurl, "http://google.com:foo")
         self.assertRaises(ValidationError, isurl, "ftp://google.com")
         self.assertRaises(ValidationError, isurl, "google.com")
+        self.assertRaises(ValidationError, isurl, None)
+
+    def test_isip4(self, fun=isip4):
+        assert fun("127.0.0.1")
+        assert fun("10.0.0.1")
+        assert fun("255.255.255.255")
+        self.assertRaises(ValidationError, fun, "10.0.0.1/24")
+        self.assertRaises(ValidationError, fun, "10.0.0")
+        self.assertRaises(ValidationError, fun, "256.333.333.333")
+        self.assertRaisesRegexp(
+            ValidationError, "expected a string", fun, None)
+        self.assertRaises(ValidationError, isip4, "::1")
+
+    def test_isip6(self, fun=isip6):
+        assert fun("::")
+        assert fun("::1")
+        assert fun("FE80:0000:0000:0000:0202:B3FF:FE1E:8329")
+        # http://www.ronnutter.com/ipv6-cheatsheet-on-identifying-valid-
+        #   ipv6-addresses/
+        self.assertRaises(
+            ValidationError, fun, "1200::AB00:1234::2552:7777:1313")
+        self.assertRaises(
+            ValidationError, fun, "1200:0000:AB00:1234:O000:2552:7777:1313")
+        self.assertRaisesRegexp(
+            ValidationError, "expected a string", fun, None)
+        self.assertRaises(ValidationError, isip6, "127.0.0.1")
+
+    def test_isip46(self):
+        self.test_isip4(fun=isip46)
+        self.test_isip6(fun=isip46)
+        self.assertRaisesRegexp(
+            ValidationError, "expected a string", isip46, None)
 
 
 # ===================================================================
