@@ -53,7 +53,7 @@ install:
   # - "%PYTHON%/python.exe C:/get-pip.py"
   # - "%PYTHON%/python.exe -m pip install ..."
   - "%WITH_COMPILER% %PYTHON%/python.exe setup.py install"
-  - "%WITH_COMPILER% %PYTHON%/Scripts/pip.exe install flake8 pep8 pyyaml toml pytest --upgrade"
+  - "%WITH_COMPILER% %PYTHON%/Scripts/pip.exe install flake8 pep8 pyyaml toml pytest ipaddress --upgrade"
   # 1.0.1 is the latest release supporting python 2.6
   - "%WITH_COMPILER% %PYTHON%/Scripts/pip.exe install mock==1.0.1"
 

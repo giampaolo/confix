@@ -2,11 +2,6 @@
    :synopsis: confix module
 .. moduleauthor:: Giampaolo Rodola' <grodola@gmail.com>
 
-.. warning::
-
-   This documentation refers to latest GIT version of confix which has not been
-   released yet.
-
 confix documentation
 ====================
 
