@@ -283,6 +283,9 @@ def isurl(value):
 
 
 def isip46(value):
+    """Assert value is a valid IPv4 or IPv6 address.
+    On Python < 3.3 requires ipaddress module to be installed.
+    """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
@@ -298,6 +301,7 @@ def isip46(value):
 
 
 def isip4(value):
+    """Assert value is a valid IPv4 address."""
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
     octs = value.split('.')
@@ -312,6 +316,9 @@ def isip4(value):
 
 
 def isip6(value):
+    """Assert value is a valid IPv6 address.
+    On Python < 3.3 requires ipaddress module to be installed.
+    """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
