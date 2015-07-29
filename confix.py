@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 
 if _PY3:
     basestring = str
+    unicode = str
 
 
 # =============================================================================
@@ -289,8 +290,8 @@ def isip46(value):
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
-    if not _PY3 and not isinstance(value, unicode):  # NOQA
-        value = unicode(value)  # NOQA
+    if not _PY3 and not isinstance(value, unicode):
+        value = unicode(value)
     try:
         if "/" in value:
             raise ValueError
@@ -322,8 +323,8 @@ def isip6(value):
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
     if not isinstance(value, basestring):
         raise ValidationError("expected a string, got %r" % value)
-    if not _PY3 and not isinstance(value, unicode):  # NOQA
-        value = unicode(value)  # NOQA
+    if not _PY3 and not isinstance(value, unicode):
+        value = unicode(value)
     try:
         ipaddress.IPv6Address(value)
     except ValueError:

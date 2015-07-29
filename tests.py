@@ -909,6 +909,17 @@ class TestExceptions(BaseTestCase):
             "config file provides setting key 'foo' with value 'bar' but " \
             "setting key 'foo' is not defined in any of the config classes"
 
+        @register()
+        class config:
+            pass
+
+        exc = UnrecognizedSettingKeyError(
+            section=None, key='foo', new_value='bar')
+        assert str(exc) == \
+            "config file provides setting key 'foo' with value 'bar' but " \
+            "setting key 'foo' is not defined in config class %s.%s" % (
+                config.__module__, config.__name__)
+
     def test_required_key_error(self):
         exc = RequiredSettingKeyError(None, key="foo")
         assert str(exc) == \
