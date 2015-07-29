@@ -35,10 +35,7 @@ schema()
 validators
 ==========
 
-- isipaddr
-- isip4addr
-- isip6addr
-- isip46addr
+- isurl() validator does not check IPv4 octects are <= 255
 
 Generic
 =======
