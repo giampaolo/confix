@@ -16,7 +16,7 @@ import yaml  # requires "pip install pyyaml"
 
 import confix
 from confix import Error, UnrecognizedSettingKeyError, RequiredSettingKeyError
-from confix import istrue, isin, isnotin, isemail, get_parsed_conf
+from confix import istrue, isin, isnotin, isemail, isurl, get_parsed_conf
 from confix import register, parse, parse_with_envvars, discard, schema
 from confix import TypesMismatchError, AlreadyParsedError, NotParsedError
 from confix import ValidationError, AlreadyRegisteredError
@@ -728,6 +728,22 @@ class TestValidators(BaseTestCase):
         assert isemail("email@domain.name")
         assert isemail("email@domain.co.jp")
         assert isemail("firstname-lastname@domain.com")
+
+    def test_isurl(self):
+        assert isurl("http://google.com")
+        assert isurl("http://www.google.com")
+        assert isurl("http://www.google.com/foo/bar")
+        assert isurl("https://google.com")
+        assert isurl("https://www.google.com")
+        assert isurl("https://www.google.com:80")
+        assert isurl("https://www.google.com:80")
+        assert isurl("http://www.2google.com")
+        assert isurl("http://127.0.0.1")
+        assert isurl("http://127.0.0.1:8000")
+        self.assertRaises(ValidationError, isurl, "htt://google.com")
+        self.assertRaises(ValidationError, isurl, "http://google.com:foo")
+        self.assertRaises(ValidationError, isurl, "ftp://google.com")
+        self.assertRaises(ValidationError, isurl, "google.com")
 
 
 # ===================================================================

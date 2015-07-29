@@ -32,6 +32,14 @@ schema()
 - schema: figure out what do in case no default value is specified
 - move running of validation into schema (validate() method)
 
+validators
+==========
+
+- isipaddr
+- isip4addr
+- isip6addr
+- isip46addr
+
 Generic
 =======
 

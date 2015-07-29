@@ -47,6 +47,14 @@ _PY3 = sys.version_info >= (3, )
 _STR_BOOL_TRUE = set(("1", "yes", "true", "on"))
 _STR_BOOL_FALSE = set(("0", "no", "false", "off"))
 _EMAIL_RE = re.compile("^.+@.+\..+$")
+# http://stackoverflow.com/a/7995979/376587
+_URL_RE = re.compile(
+    r'^https?://'  # http:// or https://
+    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain
+    r'localhost|'  # localhost
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # or IPv4
+    r'(?::\d+)?'  # optional port
+    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 _DEFAULT = object()
 _threading_lock = threading.Lock()
 _multiprocessing_lock = multiprocessing.Lock()
@@ -258,6 +266,14 @@ def isemail(value):
         raise ValidationError("expected a string, got %r" % value)
     if re.match(_EMAIL_RE, value) is None:
         raise ValidationError("not a valid email")
+    return True
+
+
+def isurl(value):
+    if not isinstance(value, basestring):
+        raise ValidationError("expected a string, got %r" % value)
+    if re.match(_URL_RE, value) is None:
+        raise ValidationError("not a valid url")
     return True
 
 

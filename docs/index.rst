@@ -166,6 +166,12 @@ Validators are simple utility functions which can be used with
 
     Assert value is a valid email.
 
+.. function:: isurl(value)
+
+    Assert value is a valid url. This includes urls starting with "http" and
+    "https", IPv4 urls (e.g. "http://127.0.0.1") and optional port (e.g.
+    "http://localhost:8080").
+
 Usage by examples
 =================
 

@@ -1,5 +1,15 @@
 Bug tracker at https://github.com/giampaolo/confix/issues
 
+Version 0.2.2 - XXXX-XX-XX
+==========================
+
+- #18: isurl() validator.
+
+Version 0.2.1 - 2015-07-28
+==========================
+
+- rename exceptions
+
 Version 0.2.0 - 2015-07-28
 ==========================
 
