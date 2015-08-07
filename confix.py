@@ -37,7 +37,7 @@ __all__ = [
     'RequiredSettingKeyError', 'TypesMismatchError', 'AlreadyRegisteredError',
     'UnrecognizedSettingKeyError',
 ]
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 version_info = tuple([int(num) for num in __version__.split('.')])

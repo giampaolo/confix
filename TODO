@@ -29,6 +29,8 @@ parse_with_envvars()
 schema()
 ========
 
+- add 'nullable' parameter and raise exc if overridden arg is an empty str or
+  None?
 - schema: figure out what do in case no default value is specified
 - move running of validation into schema (validate() method)
 
