@@ -41,7 +41,7 @@ fi
 pip install coverage coveralls flake8 pep8 pyyaml toml pytest pytest-cov
 
 if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]] || [[ $PYVER == 'py26' ]]; then
-    pip install -U unittest2
+    pip install -U unittest2 ipaddress
 elif [[ $TRAVIS_PYTHON_VERSION < '3.3' ]] || [[ $PYVER < 'py33' ]]; then
     pip install -U ipaddress
 elif [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]] || [[ $PYVER == 'pypy' ]]; then
