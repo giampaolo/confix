@@ -14,9 +14,6 @@ matrix:
           env: PYVER=py27
         - language: generic
           os: osx
-          env: PYVER=py32
-        - language: generic
-          os: osx
           env: PYVER=py33
         - language: generic
           os: osx
