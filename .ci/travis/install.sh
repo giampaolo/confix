@@ -21,10 +21,6 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
             pyenv install 2.7.10
             pyenv virtualenv 2.7.10 confix
             ;;
-        py32)
-            pyenv install 3.2.6
-            pyenv virtualenv 3.2.6 confix
-            ;;
         py33)
             pyenv install 3.3.6
             pyenv virtualenv 3.3.6 confix
