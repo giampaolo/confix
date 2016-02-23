@@ -86,7 +86,7 @@ For more examples see `docs <http://pythonhosted.org/confix>`_.
 Main features
 -------------
 
-- supports **YAML, **JSON**, **INI** and **TOML** serialization formats.
+- supports **YAML**, **JSON**, **INI** and **TOML** serialization formats.
 - can be easily extended to support other formats.
 - support for Python 3
 - small code base
