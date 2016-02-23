@@ -52,6 +52,13 @@ Example:
 
 python file:
 
+config file:
+
+.. code-block:: yaml
+
+    # config.yml
+    password: secret
+
 .. code-block:: python
 
     # main.py
@@ -65,13 +72,6 @@ python file:
     parse('config.yaml')
     print(config.username)
     print(config.password)
-
-config file:
-
-.. code-block:: yaml
-
-    # config.yml
-    password: secret
 
 shell:
 
