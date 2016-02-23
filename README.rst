@@ -50,14 +50,14 @@ In doing so it validates the overridden settings by:
 
 Example:
 
-python file:
-
 config file:
 
 .. code-block:: yaml
 
     # config.yml
     password: secret
+
+python file:
 
 .. code-block:: python
 
