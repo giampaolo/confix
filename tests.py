@@ -17,13 +17,8 @@ import yaml  # requires "pip install pyyaml"
 import confix
 from confix import AlreadyParsedError
 from confix import AlreadyRegisteredError
-from confix import TypesMismatchError
-from confix import UnrecognizedSettingKeyError
-from confix import ValidationError
-from confix import Error
-from confix import NotParsedError
-from confix import RequiredSettingKeyError
 from confix import discard
+from confix import Error
 from confix import get_parsed_conf
 from confix import isemail
 from confix import isin
@@ -33,10 +28,15 @@ from confix import isip6
 from confix import isnotin
 from confix import istrue
 from confix import isurl
+from confix import NotParsedError
 from confix import parse
 from confix import parse_with_envvars
 from confix import register
+from confix import RequiredSettingKeyError
 from confix import schema
+from confix import TypesMismatchError
+from confix import UnrecognizedSettingKeyError
+from confix import ValidationError
 
 
 PY3 = sys.version_info >= (3, )
@@ -188,6 +188,30 @@ class BaseMixin(object):
         self.parse(self.TESTFN, type_check=False)
         assert config.foo == 5
         assert config.bar == 'foo'
+
+    def test_types_mismatch_schema_override(self):
+        # Same as above but schema(type_check=False) should override
+        # parse(type_check=True).
+        @register(self.section)
+        class config:
+            foo = schema(default=21, type_check=False)
+
+        self.dict_to_file(
+            dict(foo='aaa')
+        )
+        self.parse(self.TESTFN)
+        discard()
+
+        #
+        @register(self.section)
+        class config2:
+            foo = schema(default=21, type_check=True)
+
+        self.dict_to_file(
+            dict(foo='aaa')
+        )
+        with self.assertRaises(TypesMismatchError):
+            self.parse(self.TESTFN)
 
     def test_base_types(self):
         # str, int, float, bool are supposed to be supported by all

@@ -374,9 +374,10 @@ def parse_ini(file):
 
 
 class schema(collections.namedtuple('field',
-             ['default', 'required', 'validator'])):
+             ['default', 'required', 'validator', 'type_check'])):
 
-    def __new__(cls, default=_DEFAULT, required=False, validator=None):
+    def __new__(cls, default=_DEFAULT, required=False, validator=None,
+                type_check=True):
         if not required and default is _DEFAULT:
             raise ValueError("specify a default value or set required=True")
         if validator is not None:
@@ -387,7 +388,8 @@ class schema(collections.namedtuple('field',
                 for v in validator:
                     if not callable(v):
                         raise TypeError("%r is not callable" % v)
-        return super(schema, cls).__new__(cls, default, required, validator)
+        return super(schema, cls).__new__(
+            cls, default, required, validator, type_check)
 
 
 def register(section=None):
@@ -578,29 +580,32 @@ class _Parser:
 
     def cast_value(self, section, key, default_value, new_value):
         """Cast a value depending on default value type."""
+        type_check = self.type_check  # global opt
         if isinstance(default_value, schema):
+            type_check = default_value.type_check  # per-schema opt
             default_value = default_value.default
+
         if isinstance(default_value, bool):
             if new_value.lower() in _STR_BOOL_TRUE:
                 new_value = True
             elif new_value.lower() in _STR_BOOL_FALSE:
                 new_value = False
             else:
-                if self.type_check:
+                if type_check:
                     raise TypesMismatchError(
                         section, key, default_value, new_value)
         elif isinstance(default_value, int):
             try:
                 new_value = int(new_value)
             except ValueError:
-                if self.type_check:
+                if type_check:
                     raise TypesMismatchError(
                         section, key, default_value, new_value)
         elif isinstance(default_value, float):
             try:
                 new_value = float(new_value)
             except ValueError:
-                if self.type_check:
+                if type_check:
                     raise TypesMismatchError(
                         section, key, default_value, new_value)
         else:
@@ -660,6 +665,10 @@ class _Parser:
         is_schema = isinstance(default_value, schema)
         if not is_schema:
             self.check_type(section, key, default_value, new_value)
+        else:
+            schema_ = default_value
+            if schema_.type_check:
+                self.check_type(section, key, schema_.default, new_value)
 
         # Run validators.
         if is_schema:

@@ -93,7 +93,7 @@ API reference
     All attribute names starting with an underscore will be ignored.
     The class can also define classmethods.
 
-.. function:: schema(default=_DEFAULT, required=False, validator=None)
+.. function:: schema(default=_DEFAULT, required=False, validator=None, type_check=True)
 
     A schema can be used to validate configuration key's values or state they
     are mandatory.
@@ -104,6 +104,10 @@ API reference
     validating the overridden value.
     A validator function will fail if it returns ``False`` or raise
     :class:`ValidationError`.
+    *type_check* parameter overrides :func:`confix.parse()`'s type check
+    parameter for this schema only; if ``True`` it will perform a type check
+    against config file value type and schema's default type and error out if
+    the two types are different.
 
 .. function:: confix.parse(conf_file=None, file_parser=None, type_check=True)
 
