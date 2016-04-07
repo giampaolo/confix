@@ -222,14 +222,14 @@ shell:
     secret
 
 Things to note:
- - ``password`` got changed by configuration file.
- - ``parse()`` did the trick.
- - configuration fields ("keys") can be accessed as attributes
-   (``config.name``).
+- ``password`` got changed by configuration file.
+- ``parse()`` did the trick.
+- configuration fields ("keys") can be accessed as attributes
+  (``config.name``).
 
 
 Override a setting key via environment variables
-----------------------------------------
+------------------------------------------------
 
 python file:
 
@@ -256,11 +256,11 @@ shell:
     secret
 
 Things to note:
- - ``"PASSWORD"`` environment variable changed the value of ``"password"``
-   class attribute which is treated in a case insensitive fashion.
- - to change this behavior use ``parse_with_envvars(case_sensitive=True))``
-   but in that case also the class attributed must be upper case
-   (``"PASSWORD"``).
+- ``"PASSWORD"`` environment variable changed the value of ``"password"``
+  class attribute which is treated in a case insensitive fashion.
+- to change this behavior use ``parse_with_envvars(case_sensitive=True))``
+  but in that case also the class attributed must be upper case
+  (``"PASSWORD"``).
 
 
 Using configuration file and environment variables
@@ -305,8 +305,8 @@ shell:
     localhost
 
 Things to note:
- - ``"password"`` was specified in the configuration file but also by the
-   environment variable and this takes precedence over the configuration file.
+- ``"password"`` was specified in the configuration file but also by the
+  environment variable and this takes precedence over the configuration file.
 
 
 Errors: configuration definition
@@ -356,8 +356,8 @@ shell:
     confix.UnrecognizedSettingKeyError: configuration file provides setting key 'host' with value 'localhost' but setting key 'host' is not defined in the config class
 
 Things to note:
- - setting key ``'host'`` was specified in the configuration file but not in
-   the default config class.
+- setting key ``'host'`` was specified in the configuration file but not in the
+  default config class.
 
 
 Errors: types checking
@@ -665,10 +665,10 @@ shell:
     http-custom
 
 Things to note:
- - if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
-   environment variable via cmdline ``username`` setting key of both config classes
-   would have been overwritten.
- - we may also have defined a third "root" config class, with no section.
+- if we would have used ``parse_with_envvars()`` and specified a ``USERNAME``
+  environment variable via cmdline ``username`` setting key of both config classes
+  would have been overwritten.
+- we may also have defined a third "root" config class, with no section.
 
 Notes about @register
 ---------------------
@@ -676,13 +676,12 @@ Notes about @register
 Classes registered via :func:`confix.register` decorator have a bunch of
 peculiarities:
 
- - attributes starting with an underscore will be ignored.
- - attributes can be accessed both as normal attributes (``config.foo``) and
-   as a ``dict`` (``config['foo']``).
- - ``dict()`` can be used against the registered class in order to get the
-   whole configuration.
- - the config class can have class methods.
-
+- attributes starting with an underscore will be ignored.
+- attributes can be accessed both as normal attributes (``config.foo``) and
+  as a ``dict`` (``config['foo']``).
+- ``dict()`` can be used against the registered class in order to get the
+  whole configuration.
+- the config class can have class methods.
 
 .. code-block:: python
 

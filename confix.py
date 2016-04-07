@@ -471,7 +471,7 @@ def register(section=None):
 
 def get_parsed_conf():
     """Return the whole parsed configuration as a dict.
-    If parse() wasn't called yet it will raise NotParsedError.
+    Raise NotParsedError if parse() hasn't been called yet it.
     """
     with _lock_ctx():
         if not _parsed:
