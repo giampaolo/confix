@@ -2,8 +2,11 @@
 # To use a specific Python version run:
 # $ make install PYTHON=python3.3
 
-PYTHON=python
+PYTHON=python3
 TSCRIPT=tests.py
+
+INSTALL_OPTS = `$(PYTHON) -c \
+	"import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
 
 all: test
 
@@ -27,11 +30,6 @@ clean:
 
 # useful deps which are nice to have while developing / testing
 setup-dev-env: install-git-hooks
-	python -c "import urllib2; \
-			   r = urllib2.urlopen('https://bootstrap.pypa.io/get-pip.py'); \
-			   open('/tmp/get-pip.py', 'w').write(r.read());"
-	$(PYTHON) /tmp/get-pip.py --user
-	rm /tmp/get-pip.py
 	$(PYTHON) -m pip install --user --upgrade pip
 	$(PYTHON) -m pip install --user --upgrade \
 		coverage \
@@ -47,7 +45,11 @@ setup-dev-env: install-git-hooks
 		unittest2
 
 install:
-	$(PYTHON) setup.py develop --user
+	# make sure setuptools is installed (needed for 'develop' / edit mode)
+	$(PYTHON) -c "import setuptools"
+	PYTHONWARNINGS=all $(PYTHON) setup.py develop $(INSTALL_OPTS)
+	$(PYTHON) -c "import confix"  # make sure it actually worked
+
 
 uninstall:
 	cd ..; $(PYTHON) -m pip uninstall -y -v confix

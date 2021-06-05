@@ -109,6 +109,8 @@ API reference
     against config file value type and schema's default type and error out if
     the two types are different.
 
+    .. versionchanged:: 0.2.2 added *type_check* parameter.
+
 .. function:: confix.parse(conf_file=None, file_parser=None, type_check=True)
 
     Parse configuration class(es) replacing values if a configuration file

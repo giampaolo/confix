@@ -47,7 +47,7 @@ _PY3 = sys.version_info >= (3, )
 # do "True", "TRUE" etc and ignore "TrUe".
 _STR_BOOL_TRUE = set(("1", "yes", "true", "on"))
 _STR_BOOL_FALSE = set(("0", "no", "false", "off"))
-_EMAIL_RE = re.compile("^.+@.+\..+$")
+_EMAIL_RE = re.compile(r"^.+@.+\..+$")
 # http://stackoverflow.com/a/7995979/376587
 _URL_RE = re.compile(
     r'^https?://'  # http:// or https://
@@ -220,6 +220,17 @@ def _lock_ctx():
             yield
 
 
+def _isiter(obj):
+    if _PY3:
+        return isinstance(obj, collections.abc.Iterable)
+    else:
+        try:
+            iter(obj)
+        except TypeError:
+            return False
+        return True
+
+
 # =============================================================================
 # validators
 # =============================================================================
@@ -240,7 +251,7 @@ def isin(seq):
                 "expected a value amongst %r, got %r" % (seq, value))
         return True
 
-    if not isinstance(seq, collections.Iterable):
+    if not _isiter(seq):
         raise TypeError("%r is not iterable" % (seq))
     if not seq:
         raise ValueError("%r sequence can't be empty" % (seq))
@@ -255,7 +266,7 @@ def isnotin(seq):
                 "expected a value not in %r sequence, got %r" % (seq, value))
         return True
 
-    if not isinstance(seq, collections.Iterable):
+    if not _isiter(seq):
         raise TypeError("%r is not iterable".format(seq))
     if not seq:
         raise ValueError("%r sequence can't be empty".format(seq))
@@ -339,7 +350,7 @@ def isip6(value):
 
 def parse_yaml(file):
     import yaml  # requires pip install pyyaml
-    return yaml.load(file)
+    return yaml.load(file, Loader=yaml.FullLoader)
 
 
 def parse_toml(file):
@@ -381,7 +392,7 @@ class schema(collections.namedtuple('field',
         if not required and default is _DEFAULT:
             raise ValueError("specify a default value or set required=True")
         if validator is not None:
-            if not isinstance(validator, collections.Iterable):
+            if not _isiter(validator):
                 if not callable(validator):
                     raise TypeError("%r is not callable" % validator)
             else:
@@ -705,7 +716,7 @@ class _Parser:
     def run_validators(schema_, section, key, new_value):
         """Run schema validators and raise ValidationError on failure."""
         validators = schema_.validator
-        if not isinstance(validators, collections.Iterable):
+        if not _isiter(validators):
             validators = [validators]
         for validator in validators:
             exc = None

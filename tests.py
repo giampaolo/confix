@@ -45,7 +45,7 @@ if PY3:
 else:
     from cStringIO import StringIO
 
-if sys.version_info >= (2, 7):
+if PY3:
     import unittest
 else:
     import unittest2 as unittest  # requires 'pip install unittest2'
@@ -659,7 +659,7 @@ class TestIni(BaseTestCase):
             foo = 1
 
         self.write_to_file("")
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             Error,
             "can't parse ini files if a sectionless configuration class",
             parse, self.TESTFN)
@@ -743,9 +743,9 @@ class TestValidators(BaseTestCase):
         assert fun('3')
         assert fun('4')
         self.assertRaises(ValidationError, fun, '2')
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             TypeError, "is not iterable", isnotin, None)
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValueError, "sequence can't be empty", isnotin, [])
 
     def test_isemail(self):
@@ -754,7 +754,7 @@ class TestValidators(BaseTestCase):
         self.assertRaises(ValidationError, isemail, "@bar.com")
         self.assertRaises(ValidationError, isemail, "foo@bar")
         self.assertRaises(ValidationError, isemail, "foo@bar.")
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValidationError, "expected a string", isemail, None)
         assert isemail("email@domain.com")
         assert isemail("\"email\"@domain.com")
@@ -794,7 +794,7 @@ class TestValidators(BaseTestCase):
         self.assertRaises(ValidationError, fun, "10.0.0.1/24")
         self.assertRaises(ValidationError, fun, "10.0.0")
         self.assertRaises(ValidationError, fun, "256.333.333.333")
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValidationError, "expected a string", fun, None)
         self.assertRaises(ValidationError, isip4, "::1")
 
@@ -808,14 +808,14 @@ class TestValidators(BaseTestCase):
             ValidationError, fun, "1200::AB00:1234::2552:7777:1313")
         self.assertRaises(
             ValidationError, fun, "1200:0000:AB00:1234:O000:2552:7777:1313")
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValidationError, "expected a string", fun, None)
         self.assertRaises(ValidationError, isip6, "127.0.0.1")
 
     def test_isip46(self):
         self.test_isip4(fun=isip46)
         self.test_isip6(fun=isip46)
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValidationError, "expected a string", isip46, None)
 
 
@@ -892,12 +892,12 @@ class TestSchema(BaseTestCase):
 
     def test_errors(self):
         # no default nor required=True
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValueError, "specify a default value or set required", schema)
         # not callable validator
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             TypeError, "not callable", schema, default=10, validator=1)
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             TypeError, "not callable", schema, default=10, validator=['foo'])
 
 
