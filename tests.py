@@ -6,10 +6,8 @@ import os
 import sys
 import textwrap
 import warnings
-try:
-    import configparser  # py3
-except ImportError:
-    import ConfigParser as configparser
+import configparser
+import unittest
 
 import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
@@ -39,16 +37,6 @@ from confix import UnrecognizedSettingKeyError
 from confix import ValidationError
 
 
-PY3 = sys.version_info >= (3, )
-if PY3:
-    StringIO = io.StringIO
-else:
-    from cStringIO import StringIO
-
-if PY3:
-    import unittest
-else:
-    import unittest2 as unittest  # requires 'pip install unittest2'
 
 
 THIS_MODULE = os.path.splitext(os.path.basename(__file__))[0]
@@ -611,7 +599,7 @@ class TestIniMixin(BaseMixin, BaseTestCase):
             config.add_section(section)
             for key, value in values.items():
                 config.set(section, key, value)
-        fl = StringIO()
+        fl = io.StringIO()
         config.write(fl)
         fl.seek(0)
         content = fl.read()

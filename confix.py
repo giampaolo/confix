@@ -17,11 +17,7 @@ import re
 import sys
 import threading
 import warnings
-
-try:
-    import configparser  # py3
-except ImportError:
-    import ConfigParser as configparser
+import configparser
 
 __all__ = [
     # constants
@@ -42,7 +38,6 @@ __author__ = 'Giampaolo Rodola'
 __license__ = 'MIT'
 version_info = tuple([int(num) for num in __version__.split('.')])
 
-_PY3 = sys.version_info >= (3, )
 # TODO: these are currently treated as case-insensitive; instead we should
 # do "True", "TRUE" etc and ignore "TrUe".
 _STR_BOOL_TRUE = {"1", "yes", "true", "on"}
@@ -62,11 +57,6 @@ _multiprocessing_lock = multiprocessing.Lock()
 _conf_map = {}
 _parsed = False
 logger = logging.getLogger(__name__)
-
-
-if _PY3:
-    basestring = str
-    unicode = str
 
 
 # =============================================================================
@@ -221,14 +211,7 @@ def _lock_ctx():
 
 
 def _isiter(obj):
-    if _PY3:
-        return isinstance(obj, collections.abc.Iterable)
-    else:
-        try:
-            iter(obj)
-        except TypeError:
-            return False
-        return True
+    return isinstance(obj, collections.abc.Iterable)
 
 
 # =============================================================================
@@ -275,7 +258,7 @@ def isnotin(seq):
 
 def isemail(value):
     """Assert value is a valid email."""
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
     if re.match(_EMAIL_RE, value) is None:
         raise ValidationError("not a valid email")
@@ -287,7 +270,7 @@ def isurl(value):
     "http" and "https", IPv4 urls (e.g. "http://127.0.0.1") and
     optional port (e.g. "http://localhost:8080").
     """
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
     if re.match(_URL_RE, value) is None:
         raise ValidationError("not a valid URL")
@@ -299,10 +282,8 @@ def isip46(value):
     On Python < 3.3 requires ipaddress module to be installed.
     """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
-    if not _PY3 and not isinstance(value, unicode):
-        value = unicode(value)
     try:
         if "/" in value:
             raise ValueError
@@ -314,7 +295,7 @@ def isip46(value):
 
 def isip4(value):
     """Assert value is a valid IPv4 address."""
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
     octs = value.split('.')
     try:
@@ -332,10 +313,8 @@ def isip6(value):
     On Python < 3.3 requires ipaddress module to be installed.
     """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
-    if not _PY3 and not isinstance(value, unicode):
-        value = unicode(value)
     try:
         ipaddress.IPv6Address(value)
     except ValueError:
@@ -473,10 +452,10 @@ def register(section=None):
                     "registered root class %r already defines a section with "
                     "the same name" % (section, root_conf_class))
 
-    if section is not None and not isinstance(section, basestring):
+    if section is not None and not isinstance(section, str):
         raise TypeError("invalid section; expected either string or None, "
                         "got %r" % section)
-    if isinstance(section, basestring):
+    if isinstance(section, str):
         if " " in section or not section.strip():
             raise ValueError("invalid section name %r" % section)
     return wrapper
@@ -535,7 +514,7 @@ class _Parser:
                 return {}
 
         # parse conf file
-        if isinstance(self.conf_file, basestring):
+        if isinstance(self.conf_file, str):
             file = open(self.conf_file)
             _log("using conf file %s" % (self.conf_file))
         else:
@@ -702,15 +681,8 @@ class _Parser:
                 default_value is not None and
                 new_value is not None)
         if doit and type(new_value) != type(default_value):
-            if (not _PY3 and
-                    isinstance(new_value, basestring) and
-                    isinstance(default_value, basestring)):
-                # On Python 2 we don't want to make a distinction
-                # between str and unicode.
-                pass
-            else:
-                raise TypesMismatchError(
-                    section, key, default_value, new_value)
+            raise TypesMismatchError(
+                section, key, default_value, new_value)
 
     @staticmethod
     def run_validators(schema_, section, key, new_value):
@@ -807,7 +779,3 @@ def discard():
     with _lock_ctx():
         _conf_map.clear()
         _parsed = False
-
-
-if not _PY3:
-    del num

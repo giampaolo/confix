@@ -5,7 +5,8 @@ Version 0.2.2 - XXXX-XX-XX
 
 - #18: isurl() validator.
 - #19: isip4(), isip6() and isip46() validators.
-- #XXX: schema() has a new 'type_check' parameter.
+- schema() has a new 'type_check' parameter.
+- remove Python 2.X support
 
 Version 0.2.1 - 2015-07-28
 ==========================

@@ -82,8 +82,10 @@ flake8:
 	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m flake8
 
 # upload source tarball on https://pypi.python.org/pypi/pysendfile.
-upload-src: clean
-	$(PYTHON) setup.py sdist upload
+upload-src:
+	$(MAKE) clean
+	PYTHONWARNINGS=all $(PYTHON) setup.py sdist
+	$(PYTHON) -m twine upload dist/*.tar.gz
 
 # Build and upload doc on https://pythonhosted.org/confix/.
 # Requires "pip install sphinx-pypi-upload".
