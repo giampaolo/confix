@@ -45,8 +45,8 @@ version_info = tuple([int(num) for num in __version__.split('.')])
 _PY3 = sys.version_info >= (3, )
 # TODO: these are currently treated as case-insensitive; instead we should
 # do "True", "TRUE" etc and ignore "TrUe".
-_STR_BOOL_TRUE = set(("1", "yes", "true", "on"))
-_STR_BOOL_FALSE = set(("0", "no", "false", "off"))
+_STR_BOOL_TRUE = {"1", "yes", "true", "on"}
+_STR_BOOL_FALSE = {"0", "no", "false", "off"}
 _EMAIL_RE = re.compile(r"^.+@.+\..+$")
 # http://stackoverflow.com/a/7995979/376587
 _URL_RE = re.compile(
@@ -399,7 +399,7 @@ class schema(collections.namedtuple('field',
                 for v in validator:
                     if not callable(v):
                         raise TypeError("%r is not callable" % v)
-        return super(schema, cls).__new__(
+        return super().__new__(
             cls, default, required, validator, type_check)
 
 
@@ -437,8 +437,8 @@ def register(section=None):
         name = klass.__name__
         bases = klass.__bases__
         # is this really necessary?
-        skip = set(('__dict__', '__weakref__'))
-        dct = dict((k, v) for k, v in vars(klass).items() if k not in skip)
+        skip = {'__dict__', '__weakref__'}
+        dct = {k: v for k, v in vars(klass).items() if k not in skip}
         new_class = meta_wrapper(name, bases, dct)
         return new_class
 
@@ -536,7 +536,7 @@ class _Parser:
 
         # parse conf file
         if isinstance(self.conf_file, basestring):
-            file = open(self.conf_file, 'r')
+            file = open(self.conf_file)
             _log("using conf file %s" % (self.conf_file))
         else:
             file = self.conf_file
@@ -571,7 +571,7 @@ class _Parser:
         """
         conf_map = _conf_map.copy()
         env = os.environ.copy()
-        env_names = set([x for x in env.keys() if x.isupper()])
+        env_names = {x for x in env.keys() if x.isupper()}
         for section, conf_class in conf_map.items():
             for key_name in dict(conf_class).keys():
                 check_name = (
