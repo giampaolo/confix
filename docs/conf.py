@@ -23,47 +23,49 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_version():
-    INIT = os.path.abspath(os.path.join(HERE, '../confix.py'))
-    with open(INIT, 'r') as f:
+    INIT = os.path.abspath(os.path.join(HERE, "../confix.py"))
+    with open(INIT) as f:
         for line in f:
-            if line.startswith('__version__'):
-                ret = eval(line.strip().split(' = ')[1])
-                assert ret.count('.') == 2, ret
-                for num in ret.split('.'):
+            if line.startswith("__version__"):
+                ret = eval(line.strip().split(" = ")[1])  # noqa
+                assert ret.count(".") == 2, ret
+                for num in ret.split("."):
                     assert num.isdigit(), ret
                 return ret
-        else:
-            raise ValueError("couldn't find version string")
+        raise ValueError("couldn't find version string")
+
 
 VERSION = get_version()
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.0'
+needs_sphinx = "1.0"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.coverage',
-              'sphinx.ext.pngmath',
-              'sphinx.ext.viewcode',
-              'sphinx.ext.intersphinx']
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.pngmath",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_template']
+templates_path = ["_template"]
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
 project = PROJECT_NAME
-copyright = '2009-%s, %s' % (THIS_YEAR, AUTHOR)
+copyright = "2009-%s, %s" % (THIS_YEAR, AUTHOR)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -84,7 +86,7 @@ version = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ["_build"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -103,7 +105,7 @@ autodoc_docstring_signature = True
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -117,8 +119,8 @@ pygments_style = 'sphinx'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme = 'pydoctheme'
-html_theme_options = {'collapsiblesidebar': True}
+html_theme = "pydoctheme"
+html_theme_options = {"collapsiblesidebar": True}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ["_themes"]
@@ -137,16 +139,16 @@ html_title = "{project} {version} documentation".format(**locals())
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = '_static/favicon.ico'
+html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = "%b %d, %Y"
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -154,11 +156,13 @@ html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 html_sidebars = {
-    'index': 'indexsidebar.html',
-    '**': ['globaltoc.html',
-           'relations.html',
-           'sourcelink.html',
-           'searchbox.html']
+    "index": "indexsidebar.html",
+    "**": [
+        "globaltoc.html",
+        "relations.html",
+        "sourcelink.html",
+        "searchbox.html",
+    ],
 }
 
 # Additional templates that should be rendered to pages, maps page names to
@@ -194,7 +198,7 @@ html_use_index = True
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = '%s-doc' % PROJECT_NAME
+htmlhelp_basename = "%s-doc" % PROJECT_NAME
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -208,8 +212,12 @@ htmlhelp_basename = '%s-doc' % PROJECT_NAME
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-    ('index', '%s.tex' % PROJECT_NAME,
-     '%s documentation' % PROJECT_NAME, AUTHOR),
+    (
+        "index",
+        "%s.tex" % PROJECT_NAME,
+        "%s documentation" % PROJECT_NAME,
+        AUTHOR,
+    ),
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -241,7 +249,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', PROJECT_NAME, '%s documentation' % PROJECT_NAME, [AUTHOR], 1)
+    ("index", PROJECT_NAME, "%s documentation" % PROJECT_NAME, [AUTHOR], 1)
 ]
 
 # If true, show URL addresses after external links.

@@ -71,15 +71,13 @@ coverage: install
 	$(PYTHON) -m coverage html
 	$(PYTHON) -m webbrowser -t htmlcov/confix.html
 
-pep8:
-	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m pep8
+ruff:  ## Run ruff linter.
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff check --no-cache
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff format --check
 
-pyflakes:
-	@export PYFLAKES_NODOCTEST=1 && \
-		git ls-files | grep \\.py$ | xargs $(PYTHON) -m pyflakes
-
-flake8:
-	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m flake8
+fix-ruff:
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff --no-cache --fix
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff format --no-cache
 
 # upload source tarball on https://pypi.python.org/pypi/pysendfile.
 upload-src:

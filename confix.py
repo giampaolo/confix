@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-
-"""
-A language-agnostic configuration parser.
+"""A language-agnostic configuration parser.
 Currently supports YAML, JSON, INI and TOML serialization formats.
 """
 
 import collections
+import configparser
 import contextlib
 import functools
 import inspect
@@ -14,29 +12,44 @@ import logging
 import multiprocessing
 import os
 import re
-import sys
 import threading
 import warnings
-import configparser
+
 
 __all__ = [
     # constants
-    "version_info", "__version__",
+    "version_info",
+    "__version__",
     # functions
-    'register', 'parse', 'parse_with_envvars', 'discard', 'schema',
-    'get_parsed_conf',
+    "register",
+    "parse",
+    "parse_with_envvars",
+    "discard",
+    "schema",
+    "get_parsed_conf",
     # validators
-    'isemail', 'isin', 'isnotin', 'istrue', 'isurl', 'isip46', 'isip4',
-    'isip6',
+    "isemail",
+    "isin",
+    "isnotin",
+    "istrue",
+    "isurl",
+    "isip46",
+    "isip4",
+    "isip6",
     # exceptions
-    'Error', 'ValidationError', 'AlreadyParsedError', 'NotParsedError',
-    'RequiredSettingKeyError', 'TypesMismatchError', 'AlreadyRegisteredError',
-    'UnrecognizedSettingKeyError',
+    "Error",
+    "ValidationError",
+    "AlreadyParsedError",
+    "NotParsedError",
+    "RequiredSettingKeyError",
+    "TypesMismatchError",
+    "AlreadyRegisteredError",
+    "UnrecognizedSettingKeyError",
 ]
-__version__ = '0.2.2'
-__author__ = 'Giampaolo Rodola'
-__license__ = 'MIT'
-version_info = tuple([int(num) for num in __version__.split('.')])
+__version__ = "0.2.2"
+__author__ = "Giampaolo Rodola"
+__license__ = "MIT"
+version_info = tuple([int(num) for num in __version__.split(".")])
 
 # TODO: these are currently treated as case-insensitive; instead we should
 # do "True", "TRUE" etc and ignore "TrUe".
@@ -45,12 +58,14 @@ _STR_BOOL_FALSE = {"0", "no", "false", "off"}
 _EMAIL_RE = re.compile(r"^.+@.+\..+$")
 # http://stackoverflow.com/a/7995979/376587
 _URL_RE = re.compile(
-    r'^https?://'  # http:// or https://
-    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain
-    r'localhost|'  # localhost
-    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # or IPv4
-    r'(?::\d+)?'  # optional port
-    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    r"^https?://"  # http:// or https://
+    r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain
+    r"localhost|"  # localhost
+    r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # or IPv4
+    r"(?::\d+)?"  # optional port
+    r"(?:/?|[/?]\S+)$",
+    re.IGNORECASE,
+)
 _DEFAULT = object()
 _threading_lock = threading.Lock()
 _multiprocessing_lock = multiprocessing.Lock()
@@ -87,10 +102,15 @@ class ValidationError(Error):
         self.value = None
 
     def __str__(self):
-        key = "'%s.%s'" % (self.section, self.key) if self.section else \
-            repr(self.key)
+        key = (
+            "'%s.%s'" % (self.section, self.key)
+            if self.section
+            else repr(self.key)
+        )
         msg = "%s setting key with value %r didn't pass validation" % (
-            key, self.value)
+            key,
+            self.value,
+        )
         if self.msg:
             msg += "; %s" % self.msg
         return msg
@@ -100,8 +120,10 @@ class AlreadyParsedError(Error):
     """Raised when parse() or parse_with_envvars() is called twice."""
 
     def __str__(self):
-        return 'configuration was already parsed once; you may want to use ' \
-               'discard() and parse() again'
+        return (
+            "configuration was already parsed once; you may want to use "
+            "discard() and parse() again"
+        )
 
 
 class AlreadyRegisteredError(Error):
@@ -111,8 +133,10 @@ class AlreadyRegisteredError(Error):
         self.section = section
 
     def __str__(self):
-        return "a configuration class was already registered for " \
-               "section %r" % self.section
+        return (
+            "a configuration class was already registered for "
+            "section %r" % self.section
+        )
 
 
 class NotParsedError(Error):
@@ -121,7 +145,7 @@ class NotParsedError(Error):
     """
 
     def __str__(self):
-        return 'configuration is not parsed yet; use parse() first'
+        return "configuration is not parsed yet; use parse() first"
 
 
 # --- exceptions raised on parse()
@@ -144,9 +168,11 @@ class UnrecognizedSettingKeyError(Error):
         else:
             txt = "any of the config classes"
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return ("config file provides setting key %r with value %r but "
-                "setting key %r is not defined in %s" % (
-                    key, self.new_value, key, txt))
+        return (
+            "config file provides setting key %r with value %r but "
+            "setting key %r is not defined in %s"
+            % (key, self.new_value, key, txt)
+        )
 
 
 class RequiredSettingKeyError(Error):
@@ -160,8 +186,10 @@ class RequiredSettingKeyError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return "configuration class requires %r setting key to be specified " \
-               "via config file or environment variable" % (key)
+        return (
+            "configuration class requires %r setting key to be specified "
+            "via config file or environment variable" % (key)
+        )
 
 
 class TypesMismatchError(Error):
@@ -178,9 +206,17 @@ class TypesMismatchError(Error):
 
     def __str__(self):
         key = "%s.%s" % (self.section, self.key) if self.section else self.key
-        return "type mismatch for setting key %r (default_value=%r, %s) got " \
-               "%r (%s)" % (key, self.default_value, type(self.default_value),
-                            self.new_value, type(self.new_value))
+        return (
+            "type mismatch for setting key %r (default_value=%r, %s) got "
+            "%r (%s)"
+            % (
+                key,
+                self.default_value,
+                type(self.default_value),
+                self.new_value,
+                type(self.new_value),
+            )
+        )
 
 
 # =============================================================================
@@ -228,10 +264,12 @@ def istrue(value):
 
 def isin(seq):
     """Assert value is in a sequence."""
+
     def wrapper(seq, value):
         if value not in seq:
             raise ValidationError(
-                "expected a value amongst %r, got %r" % (seq, value))
+                "expected a value amongst %r, got %r" % (seq, value)
+            )
         return True
 
     if not _isiter(seq):
@@ -243,16 +281,18 @@ def isin(seq):
 
 def isnotin(seq):
     """Assert value is not in a sequence."""
+
     def wrapper(seq, value):
         if value in seq:
             raise ValidationError(
-                "expected a value not in %r sequence, got %r" % (seq, value))
+                "expected a value not in %r sequence, got %r" % (seq, value)
+            )
         return True
 
     if not _isiter(seq):
-        raise TypeError("%r is not iterable".format(seq))
+        raise TypeError(f"{seq} is not iterable")
     if not seq:
-        raise ValueError("%r sequence can't be empty".format(seq))
+        raise ValueError("sequence can't be empty")
     return functools.partial(wrapper, seq)
 
 
@@ -282,6 +322,7 @@ def isip46(value):
     On Python < 3.3 requires ipaddress module to be installed.
     """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
+
     if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
     try:
@@ -297,7 +338,7 @@ def isip4(value):
     """Assert value is a valid IPv4 address."""
     if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
-    octs = value.split('.')
+    octs = value.split(".")
     try:
         assert len(octs) == 4
         for x in octs:
@@ -313,6 +354,7 @@ def isip6(value):
     On Python < 3.3 requires ipaddress module to be installed.
     """
     import ipaddress  # requires "pip install ipaddress" on python < 3.3
+
     if not isinstance(value, str):
         raise ValidationError("expected a string, got %r" % value)
     try:
@@ -329,11 +371,13 @@ def isip6(value):
 
 def parse_yaml(file):
     import yaml  # requires pip install pyyaml
+
     return yaml.load(file, Loader=yaml.FullLoader)
 
 
 def parse_toml(file):
     import toml  # requires pip install toml
+
     return toml.loads(file.read())
 
 
@@ -354,7 +398,7 @@ def parse_ini(file):
         ret[section] = {}
         for key, value in values.items():
             ret[section][key] = value
-        ret[section].pop('__name__', None)
+        ret[section].pop("__name__", None)
     return ret
 
 
@@ -363,11 +407,16 @@ def parse_ini(file):
 # =============================================================================
 
 
-class schema(collections.namedtuple('field',
-             ['default', 'required', 'validator', 'type_check'])):
+class schema(
+    collections.namedtuple(
+        "field", ["default", "required", "validator", "type_check"]
+    )
+):
+    __slots__ = ()
 
-    def __new__(cls, default=_DEFAULT, required=False, validator=None,
-                type_check=True):
+    def __new__(
+        cls, default=_DEFAULT, required=False, validator=None, type_check=True
+    ):
         if not required and default is _DEFAULT:
             raise ValueError("specify a default value or set required=True")
         if validator is not None:
@@ -378,8 +427,7 @@ class schema(collections.namedtuple('field',
                 for v in validator:
                     if not callable(v):
                         raise TypeError("%r is not callable" % v)
-        return super().__new__(
-            cls, default, required, validator, type_check)
+        return super().__new__(cls, default, required, validator, type_check)
 
 
 def register(section=None):
@@ -392,39 +440,41 @@ def register(section=None):
     same for methods, classmethods or any other non-callable type.
     A class decoratored with this method becomes dict()-able.
     """
-    class meta_wrapper(type):
 
-        def __iter__(self):
+    class meta_wrapper(type):
+        def __iter__(self):  # noqa: N804
             # this will make the class dict()able
             for k, v in inspect.getmembers(self):
-                if not k.startswith('_') and not inspect.isroutine(v):
+                if not k.startswith("_") and not inspect.isroutine(v):
                     yield (k, v)
 
-        def __getitem__(self, key):
+        def __getitem__(self, key):  # noqa: N804
             return getattr(self, key)
 
-        def __delitem__(self, key):
+        def __delitem__(self, key):  # noqa: N804
             delattr(self, key)
 
-        def __contains__(self, key):
+        def __contains__(self, key):  # noqa: N804
             return hasattr(self, key)
 
-        def __len__(self):
+        def __len__(self):  # noqa: N804
             return len(dict(self))
 
     def add_metaclass(klass):
         name = klass.__name__
         bases = klass.__bases__
         # is this really necessary?
-        skip = {'__dict__', '__weakref__'}
+        skip = {"__dict__", "__weakref__"}
         dct = {k: v for k, v in vars(klass).items() if k not in skip}
         new_class = meta_wrapper(name, bases, dct)
         return new_class
 
     def wrapper(klass):
         if not inspect.isclass(klass):
-            raise TypeError("register decorator is supposed to be used "
-                            "against a class (got %r)" % klass)
+            raise TypeError(
+                "register decorator is supposed to be used "
+                "against a class (got %r)" % klass
+            )
         _log("registering %s.%s" % (klass.__module__, klass.__name__))
         with _lock_ctx():
             new_class = add_metaclass(klass)
@@ -436,10 +486,12 @@ def register(section=None):
             raise AlreadyRegisteredError(section)
 
         if _parsed:
-            msg = "configuration class defined after parse(); global " \
-                  "configuration will not reflect it and it will remain " \
-                  "unparsed"
-            warnings.warn(msg, UserWarning)
+            msg = (
+                "configuration class defined after parse(); global "
+                "configuration will not reflect it and it will remain "
+                "unparsed"
+            )
+            warnings.warn(msg, UserWarning, stacklevel=2)
             return lambda klass: add_metaclass(klass)
 
         if _has_sectionless_conf():
@@ -450,11 +502,14 @@ def register(section=None):
                 raise Error(
                     "attempting to register section %r when previously "
                     "registered root class %r already defines a section with "
-                    "the same name" % (section, root_conf_class))
+                    "the same name" % (section, root_conf_class)
+                )
 
     if section is not None and not isinstance(section, str):
-        raise TypeError("invalid section; expected either string or None, "
-                        "got %r" % section)
+        raise TypeError(
+            "invalid section; expected either string or None, "
+            "got %r" % section
+        )
     if isinstance(section, str):
         if " " in section or not section.strip():
             raise ValueError("invalid section name %r" % section)
@@ -481,9 +536,14 @@ def get_parsed_conf():
 
 
 class _Parser:
-
-    def __init__(self, conf_file=None, file_parser=None, type_check=True,
-                 parse_envvars=False, envvar_case_sensitive=False):
+    def __init__(
+        self,
+        conf_file=None,
+        file_parser=None,
+        type_check=True,
+        parse_envvars=False,
+        envvar_case_sensitive=False,
+    ):
         """Do all the work."""
         global _parsed
         if _parsed:
@@ -509,7 +569,8 @@ class _Parser:
             _log("conf file not specified")
             if self.file_parser is not None:
                 raise ValueError(
-                    "can't specify 'file_parser' option and no 'conf_file'")
+                    "can't specify 'file_parser' option and no 'conf_file'"
+                )
             else:
                 return {}
 
@@ -521,24 +582,32 @@ class _Parser:
             file = self.conf_file
             _log("using conf file-like object %s" % (self.conf_file))
         with file:
-            pmap = {'.yaml': parse_yaml,
-                    '.yml': parse_yaml,
-                    '.toml': parse_toml,
-                    '.json': parse_json,
-                    '.ini': parse_ini}
+            pmap = {
+                ".yaml": parse_yaml,
+                ".yml": parse_yaml,
+                ".toml": parse_toml,
+                ".json": parse_json,
+                ".ini": parse_ini,
+            }
             if self.file_parser is None:
-                if not hasattr(file, 'name'):
-                    raise Error("can't determine file format from a file "
-                                "object with no 'name' attribute")
+                if not hasattr(file, "name"):
+                    raise Error(
+                        "can't determine file format from a file "
+                        "object with no 'name' attribute"
+                    )
                 try:
                     self.file_ext = os.path.splitext(file.name)[1]
                     parser = pmap[self.file_ext]
                 except KeyError:
-                    raise ValueError("don't know how to parse %r (extension "
-                                     "not supported)" % file.name)
-                if self.file_ext == '.ini' and _has_sectionless_conf():
-                    raise Error("can't parse ini files if a sectionless "
-                                "configuration class has been registered")
+                    raise ValueError(
+                        "don't know how to parse %r (extension "
+                        "not supported)" % file.name
+                    )
+                if self.file_ext == ".ini" and _has_sectionless_conf():
+                    raise Error(
+                        "can't parse ini files if a sectionless "
+                        "configuration class has been registered"
+                    )
             else:
                 parser = self.file_parser
             return parser(file) or {}
@@ -550,17 +619,20 @@ class _Parser:
         """
         conf_map = _conf_map.copy()
         env = os.environ.copy()
-        env_names = {x for x in env.keys() if x.isupper()}
+        env_names = {x for x in env if x.isupper()}
         for section, conf_class in conf_map.items():
-            for key_name in dict(conf_class).keys():
+            for key_name in dict(conf_class):
                 check_name = (
-                    key_name.upper() if not self.envvar_case_sensitive
-                    else key_name)
+                    key_name.upper()
+                    if not self.envvar_case_sensitive
+                    else key_name
+                )
                 if check_name in env_names:
                     default_value = getattr(conf_class, key_name)
                     raw_value = env[key_name.upper()]
                     new_value = self.cast_value(
-                        section, key_name, default_value, raw_value)
+                        section, key_name, default_value, raw_value
+                    )
                     if section is None:
                         self.new_conf[key_name] = new_value
                     else:
@@ -583,21 +655,24 @@ class _Parser:
             else:
                 if type_check:
                     raise TypesMismatchError(
-                        section, key, default_value, new_value)
+                        section, key, default_value, new_value
+                    )
         elif isinstance(default_value, int):
             try:
                 new_value = int(new_value)
             except ValueError:
                 if type_check:
                     raise TypesMismatchError(
-                        section, key, default_value, new_value)
+                        section, key, default_value, new_value
+                    )
         elif isinstance(default_value, float):
             try:
                 new_value = float(new_value)
             except ValueError:
                 if type_check:
                     raise TypesMismatchError(
-                        section, key, default_value, new_value)
+                        section, key, default_value, new_value
+                    )
         else:
             # leave the new value unmodified (str)
             pass
@@ -648,7 +723,7 @@ class _Parser:
             raise UnrecognizedSettingKeyError(section, key, new_value)
 
         # Cast values for ini files (which only support string type).
-        if self.file_ext == '.ini':
+        if self.file_ext == ".ini":
             new_value = self.cast_value(section, key, default_value, new_value)
 
         # Look for type mismatch.
@@ -667,9 +742,8 @@ class _Parser:
                 self.run_validators(schema_, section, key, new_value)
 
         # Finally replace key value.
-        sec_key = key if section is None else "%s.%s" % (section, key)
-        _log("overriding setting key %r (value=%r) to new value %r".format(
-            sec_key, default_value, new_value))
+        # sec_key = key if section is None else "%s.%s" % (section, key)
+        _log("overriding setting key %r (value=%r) to new value %r".format())
         setattr(conf_class, key, new_value)
 
     def check_type(self, section, key, default_value, new_value):
@@ -677,12 +751,13 @@ class _Parser:
         override a setting key with a type which is different than the
         original one defined in the config class.
         """
-        doit = (self.type_check and
-                default_value is not None and
-                new_value is not None)
+        doit = (
+            self.type_check
+            and default_value is not None
+            and new_value is not None
+        )
         if doit and type(new_value) != type(default_value):
-            raise TypesMismatchError(
-                section, key, default_value, new_value)
+            raise TypesMismatchError(section, key, default_value, new_value)
 
     @staticmethod
     def run_validators(schema_, section, key, new_value):
@@ -692,9 +767,8 @@ class _Parser:
             validators = [validators]
         for validator in validators:
             exc = None
-            sec_key = key if section is None else "%s.%s" % (section, key)
-            _log("running validator %r for key %r with value "
-                 "%r".format(validator, sec_key, new_value))
+            # sec_key = key if section is None else "%s.%s" % (section, key)
+            _log("running validator %r for key %r with value " "%r".format())
             try:
                 ok = validator(new_value)
             except ValidationError as err:
@@ -747,12 +821,14 @@ def parse(conf_file=None, file_parser=None, type_check=True):
       type than the one defined in the configuration class.
     """
     with _lock_ctx():
-        _Parser(conf_file=conf_file, file_parser=file_parser,
-                type_check=type_check)
+        _Parser(
+            conf_file=conf_file, file_parser=file_parser, type_check=type_check
+        )
 
 
-def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
-                       case_sensitive=False):
+def parse_with_envvars(
+    conf_file=None, file_parser=None, type_check=True, case_sensitive=False
+):
     """Same as parse() but also takes environment variables into account.
     It must be noted that env vars take precedence over the config file
     (if specified).
@@ -766,11 +842,13 @@ def parse_with_envvars(conf_file=None, file_parser=None, type_check=True,
     class(es) define all upper cased setting keys.
     """
     with _lock_ctx():
-        _Parser(conf_file=conf_file,
-                file_parser=file_parser,
-                type_check=type_check,
-                parse_envvars=True,
-                envvar_case_sensitive=case_sensitive)
+        _Parser(
+            conf_file=conf_file,
+            file_parser=file_parser,
+            type_check=type_check,
+            parse_envvars=True,
+            envvar_case_sensitive=case_sensitive,
+        )
 
 
 def discard():

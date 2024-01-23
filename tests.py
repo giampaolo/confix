@@ -1,13 +1,12 @@
+import configparser
 import errno
 import imp
 import io
 import json
 import os
-import sys
 import textwrap
-import warnings
-import configparser
 import unittest
+import warnings
 
 import toml  # requires "pip install toml"
 import yaml  # requires "pip install pyyaml"
@@ -15,32 +14,30 @@ import yaml  # requires "pip install pyyaml"
 import confix
 from confix import AlreadyParsedError
 from confix import AlreadyRegisteredError
-from confix import discard
 from confix import Error
+from confix import NotParsedError
+from confix import RequiredSettingKeyError
+from confix import TypesMismatchError
+from confix import UnrecognizedSettingKeyError
+from confix import ValidationError
+from confix import discard
 from confix import get_parsed_conf
 from confix import isemail
 from confix import isin
 from confix import isip4
-from confix import isip46
 from confix import isip6
+from confix import isip46
 from confix import isnotin
 from confix import istrue
 from confix import isurl
-from confix import NotParsedError
 from confix import parse
 from confix import parse_with_envvars
 from confix import register
-from confix import RequiredSettingKeyError
 from confix import schema
-from confix import TypesMismatchError
-from confix import UnrecognizedSettingKeyError
-from confix import ValidationError
-
-
 
 
 THIS_MODULE = os.path.splitext(os.path.basename(__file__))[0]
-TESTFN = '$testfile'
+TESTFN = "$testfile"
 
 
 def safe_remove(path):
@@ -57,22 +54,22 @@ def safe_remove(path):
 
 
 class BaseTestCase(unittest.TestCase):
-
     def setUp(self):
         discard()
         self.original_environ = os.environ.copy()
-        if getattr(self, 'TESTFN', None) is not None:
+        if getattr(self, "TESTFN", None) is not None:
             safe_remove(self.TESTFN)
 
     def tearDown(self):
         discard()
-        os.environ = self.original_environ
-        if getattr(self, 'TESTFN', None) is not None:
+        os.environ.clear()
+        os.environ.update(self.original_environ)
+        if getattr(self, "TESTFN", None) is not None:
             safe_remove(self.TESTFN)
 
     @classmethod
     def write_to_file(cls, content, fname=None):
-        with open(fname or cls.TESTFN, 'w') as f:
+        with open(fname or cls.TESTFN, "w") as f:
             f.write(content)
 
     def parse(self, *args, **kwargs):
@@ -84,6 +81,7 @@ class BaseTestCase(unittest.TestCase):
 
 class BaseMixin:
     """Base class from which mixin classes are derived."""
+
     TESTFN = None
     section = None
 
@@ -96,7 +94,7 @@ class BaseMixin:
         self.section = self.original_section
 
     def dict_to_file(self, dct):
-        raise NotImplementedError('must be implemented in subclass')
+        raise NotImplementedError("must be implemented in subclass")
 
     # --- base tests
 
@@ -118,9 +116,7 @@ class BaseMixin:
             foo = 1
             bar = 2
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
+        self.dict_to_file(dict(foo=5))
         self.parse(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 2
@@ -132,9 +128,7 @@ class BaseMixin:
             foo = 1
             bar = 2
 
-        self.dict_to_file(
-            dict(foo=5, bar=6)
-        )
+        self.dict_to_file(dict(foo=5, bar=6))
         self.parse(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 6
@@ -146,13 +140,11 @@ class BaseMixin:
             foo = 1
             bar = 2
 
-        self.dict_to_file(
-            dict(foo=5, apple=6)
-        )
+        self.dict_to_file(dict(foo=5, apple=6))
         with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
-        assert cm.exception.key, 'apple'
+        assert cm.exception.key, "apple"
 
     def test_types_mismatch(self):
         # Conf file provides a key with a value whose type is != than
@@ -162,20 +154,18 @@ class BaseMixin:
             foo = 1
             bar = 2
 
-        self.dict_to_file(
-            dict(foo=5, bar='foo')
-        )
+        self.dict_to_file(dict(foo=5, bar="foo"))
         with self.assertRaises(TypesMismatchError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'bar'
+        assert cm.exception.key == "bar"
         assert cm.exception.default_value == 2
-        assert cm.exception.new_value == 'foo'
+        assert cm.exception.new_value == "foo"
 
         # ...Unless we explicitly tell parse() to ignore type mismatch.
         self.parse(self.TESTFN, type_check=False)
         assert config.foo == 5
-        assert config.bar == 'foo'
+        assert config.bar == "foo"
 
     def test_types_mismatch_schema_override(self):
         # Same as above but schema(type_check=False) should override
@@ -184,9 +174,7 @@ class BaseMixin:
         class config:
             foo = schema(default=21, type_check=False)
 
-        self.dict_to_file(
-            dict(foo='aaa')
-        )
+        self.dict_to_file(dict(foo="aaa"))
         self.parse(self.TESTFN)
         discard()
 
@@ -195,9 +183,7 @@ class BaseMixin:
         class config2:
             foo = schema(default=21, type_check=True)
 
-        self.dict_to_file(
-            dict(foo='aaa')
-        )
+        self.dict_to_file(dict(foo="aaa"))
         with self.assertRaises(TypesMismatchError):
             self.parse(self.TESTFN)
 
@@ -211,12 +197,14 @@ class BaseMixin:
             some_int = 0
             some_str = "foo"
 
-        self.dict_to_file(dict(
-            some_true_bool=False,
-            some_false_bool=True,
-            some_int=1,
-            some_str="bar",
-        ))
+        self.dict_to_file(
+            dict(
+                some_true_bool=False,
+                some_false_bool=True,
+                some_int=1,
+                some_str="bar",
+            )
+        )
         self.parse(self.TESTFN)
         assert config.some_true_bool is False
         assert config.some_false_bool is True
@@ -249,13 +237,11 @@ class BaseMixin:
             foo = schema(10, required=True)
             bar = 2
 
-        self.dict_to_file(
-            dict(bar=2)
-        )
+        self.dict_to_file(dict(bar=2))
         with self.assertRaises(RequiredSettingKeyError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'foo'
+        assert cm.exception.key == "foo"
 
     def test_schema_required_provided(self):
         # If a schema is required and it's provided in the conf file
@@ -264,9 +250,7 @@ class BaseMixin:
         class config:
             foo = schema(10, required=True)
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
+        self.dict_to_file(dict(foo=5))
         self.parse(self.TESTFN)
         assert config.foo == 5
 
@@ -293,9 +277,7 @@ class BaseMixin:
             not_overridden = schema(10, validator=[fun3, fun4])
 
         flags = []
-        self.dict_to_file(
-            dict(overridden=5)
-        )
+        self.dict_to_file(dict(overridden=5))
         self.parse(self.TESTFN)
         assert sorted(flags) == [1, 2, 3, 4]
         assert config.overridden == 5
@@ -308,9 +290,7 @@ class BaseMixin:
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, int))
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
+        self.dict_to_file(dict(foo=5))
         self.parse(self.TESTFN)
 
     def test_validator_ko(self):
@@ -318,32 +298,29 @@ class BaseMixin:
         class config:
             foo = schema(10, validator=lambda x: isinstance(x, str))
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
+        self.dict_to_file(dict(foo=5))
         with self.assertRaises(ValidationError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'foo'
+        assert cm.exception.key == "foo"
         assert cm.exception.value == 5
 
     def test_validator_ko_custom_exc_w_message(self):
         def validator(value):
-            raise ValidationError('message')
+            raise ValidationError("message")
 
         @register(self.section)
         class config:
             foo = schema(10, validator=validator)
-        self.dict_to_file(
-            dict(foo=5)
-        )
+
+        self.dict_to_file(dict(foo=5))
 
         with self.assertRaises(ValidationError) as cm:
             self.parse(self.TESTFN)
         # assert cm.exception.section == 'name'  # TOD)
-        assert cm.exception.key == 'foo'
+        assert cm.exception.key == "foo"
         assert cm.exception.value == 5
-        assert cm.exception.msg == 'message'
+        assert cm.exception.msg == "message"
 
     def test_validator_ko_custom_exc_w_no_message(self):
         def validator(value):
@@ -352,17 +329,16 @@ class BaseMixin:
         @register(self.section)
         class config:
             foo = schema(10, validator=validator)
-        self.dict_to_file(
-            dict(foo=5)
-        )
+
+        self.dict_to_file(dict(foo=5))
 
         with self.assertRaises(ValidationError) as cm:
             self.parse(self.TESTFN)
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'foo'
+        assert cm.exception.key == "foo"
         assert cm.exception.value == 5
         assert cm.exception.msg is None
-        assert 'with value 5' in str(cm.exception)
+        assert "with value 5" in str(cm.exception)
 
     # --- test parse_with_envvars
 
@@ -374,10 +350,8 @@ class BaseMixin:
             bar = 2
             apple = 3
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
-        os.environ['APPLE'] = '10'
+        self.dict_to_file(dict(foo=5))
+        os.environ["APPLE"] = "10"
         self.parse_with_envvars(self.TESTFN)
         assert config.foo == 5
         assert config.bar == 2
@@ -389,10 +363,8 @@ class BaseMixin:
         class config:
             foo = 1
 
-        self.dict_to_file(
-            dict(foo=5)
-        )
-        os.environ['FOO'] = '6'
+        self.dict_to_file(dict(foo=5))
+        os.environ["FOO"] = "6"
         self.parse_with_envvars(self.TESTFN)
         assert config.foo == 6
 
@@ -404,9 +376,9 @@ class BaseMixin:
             APPLE = 3
 
         # non-uppercase env vars are supposed to be ignored
-        os.environ['FoO'] = '10'
-        os.environ['BAR'] = '20'
-        os.environ['APPLE'] = '30'
+        os.environ["FoO"] = "10"  # noqa
+        os.environ["BAR"] = "20"
+        os.environ["APPLE"] = "30"
         parse_with_envvars(case_sensitive=True)
         assert config.foo == 1
         assert config.bar == 2
@@ -421,10 +393,10 @@ class BaseMixin:
             PeAr = 4
 
         # non-uppercase env vars are supposed to be ignored
-        os.environ['FoO'] = '10'
-        os.environ['BAR'] = '20'
-        os.environ['APPLE'] = '30'
-        os.environ['PEAR'] = '40'
+        os.environ["FoO"] = "10"  # noqa
+        os.environ["BAR"] = "20"
+        os.environ["APPLE"] = "30"
+        os.environ["PEAR"] = "40"
         parse_with_envvars(case_sensitive=False)
         assert config.foo == 1
         assert config.bar == 20
@@ -439,33 +411,33 @@ class BaseMixin:
             some_bool = True
 
         # int
-        os.environ['SOME_INT'] = 'foo'
+        os.environ["SOME_INT"] = "foo"
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'some_int'
+        assert cm.exception.key == "some_int"
         assert cm.exception.default_value == 1
-        assert cm.exception.new_value == 'foo'
-        del os.environ['SOME_INT']
+        assert cm.exception.new_value == "foo"
+        del os.environ["SOME_INT"]
 
         # float
-        os.environ['SOME_FLOAT'] = 'foo'
+        os.environ["SOME_FLOAT"] = "foo"
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'some_float'
+        assert cm.exception.key == "some_float"
         assert cm.exception.default_value == 0.1
-        assert cm.exception.new_value == 'foo'
-        del os.environ['SOME_FLOAT']
+        assert cm.exception.new_value == "foo"
+        del os.environ["SOME_FLOAT"]
 
         # bool
-        os.environ['SOME_BOOL'] = 'foo'
+        os.environ["SOME_BOOL"] = "foo"
         with self.assertRaises(TypesMismatchError) as cm:
             parse_with_envvars()
         assert cm.exception.section == self.section
-        assert cm.exception.key == 'some_bool'
+        assert cm.exception.key == "some_bool"
         assert cm.exception.default_value is True
-        assert cm.exception.new_value == 'foo'
+        assert cm.exception.new_value == "foo"
 
     # --- test multiple sections
 
@@ -474,43 +446,47 @@ class BaseMixin:
         # conf file defining separate sections.
         self.section = None
 
-        @register('ftp')
+        @register("ftp")
         class ftp_config:
             port = 21
-            username = 'ftp'
+            username = "ftp"
 
-        @register('http')
+        @register("http")
         class http_config:
             port = 80
-            username = 'www'
+            username = "www"
 
-        self.dict_to_file({
-            'ftp': dict(username='foo'),
-            'http': dict(username='bar'),
-        })
+        self.dict_to_file(
+            {
+                "ftp": dict(username="foo"),
+                "http": dict(username="bar"),
+            }
+        )
         self.parse(self.TESTFN)
         assert ftp_config.port == 21
-        assert ftp_config.username == 'foo'
+        assert ftp_config.username == "foo"
         assert http_config.port == 80
-        assert http_config.username == 'bar'
+        assert http_config.username == "bar"
 
     def test_multisection_invalid_section(self):
         # Config file define a section which is not defined in config
         # class.
         self.section = None
 
-        @register('ftp')
+        @register("ftp")
         class config:
             port = 21
-            username = 'ftp'
+            username = "ftp"
 
-        self.dict_to_file({
-            'http': dict(username='bar'),
-        })
+        self.dict_to_file(
+            {
+                "http": dict(username="bar"),
+            }
+        )
         with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
-        assert cm.exception.key == 'http'
-        assert cm.exception.new_value == dict(username='bar')
+        assert cm.exception.key == "http"
+        assert cm.exception.new_value == dict(username="bar")
         assert cm.exception.section is None
 
     def test_multisection_unrecognized_key(self):
@@ -518,19 +494,21 @@ class BaseMixin:
         # class.
         self.section = None
 
-        @register('ftp')
+        @register("ftp")
         class config:
             port = 21
-            username = 'ftp'
+            username = "ftp"
 
-        self.dict_to_file({
-            'ftp': dict(password='bar'),
-        })
+        self.dict_to_file(
+            {
+                "ftp": dict(password="bar"),
+            }
+        )
         with self.assertRaises(UnrecognizedSettingKeyError) as cm:
             self.parse(self.TESTFN)
-        assert cm.exception.key == 'password'
-        assert cm.exception.new_value == 'bar'
-        assert cm.exception.section == 'ftp'
+        assert cm.exception.key == "password"
+        assert cm.exception.new_value == "bar"
+        assert cm.exception.section == "ftp"
 
 
 # ===================================================================
@@ -539,8 +517,9 @@ class BaseMixin:
 
 # yaml
 
+
 class TestYamlMixin(BaseMixin, BaseTestCase):
-    TESTFN = TESTFN + '.yaml'
+    TESTFN = TESTFN + ".yaml"
 
     def dict_to_file(self, dct):
         if self.section:
@@ -550,13 +529,14 @@ class TestYamlMixin(BaseMixin, BaseTestCase):
 
 
 class TestYamlWithSectionMixin(TestYamlMixin):
-    section = 'name'
+    section = "name"
 
 
 # json
 
+
 class TestJsonMixin(BaseMixin, BaseTestCase):
-    TESTFN = TESTFN + '.json'
+    TESTFN = TESTFN + ".json"
 
     def dict_to_file(self, dct):
         if self.section:
@@ -565,13 +545,14 @@ class TestJsonMixin(BaseMixin, BaseTestCase):
 
 
 class TestJsonWithSectionMixin(TestJsonMixin):
-    section = 'name'
+    section = "name"
 
 
 # toml
 
+
 class TestTomlMixin(BaseMixin, BaseTestCase):
-    TESTFN = TESTFN + '.toml'
+    TESTFN = TESTFN + ".toml"
 
     def dict_to_file(self, dct):
         if self.section:
@@ -581,17 +562,18 @@ class TestTomlMixin(BaseMixin, BaseTestCase):
 
 
 class TestTomWithSectionlMixin(TestTomlMixin):
-    section = 'name'
+    section = "name"
 
 
 # ini
 
+
 class TestIniMixin(BaseMixin, BaseTestCase):
-    TESTFN = TESTFN + 'testfile.ini'
-    section = 'name'
+    TESTFN = TESTFN + "testfile.ini"
+    section = "name"
 
     def dict_to_file(self, dct):
-        if not self._testMethodName.startswith('test_multisection'):
+        if not self._testMethodName.startswith("test_multisection"):
             dct = {self.section: dct}
         config = configparser.RawConfigParser()
         for section, values in dct.items():
@@ -608,12 +590,13 @@ class TestIniMixin(BaseMixin, BaseTestCase):
 
 # env vars
 
+
 class TestEnvVarsMixin(BaseMixin, BaseTestCase):
-    TESTFN = TESTFN + 'testfile.ini'
+    TESTFN = TESTFN + "testfile.ini"
 
     def setUp(self):
         super().setUp()
-        if self._testMethodName.startswith('test_multisection'):
+        if self._testMethodName.startswith("test_multisection"):
             raise unittest.SkipTest
 
     def parse(self, *args, **kwargs):
@@ -639,7 +622,7 @@ class TestEnvVarsMixin(BaseMixin, BaseTestCase):
 
 
 class TestIni(BaseTestCase):
-    TESTFN = TESTFN + '.ini'
+    TESTFN = TESTFN + ".ini"
 
     def test_sectionless_conf(self):
         @register()
@@ -650,57 +633,72 @@ class TestIni(BaseTestCase):
         self.assertRaisesRegex(
             Error,
             "can't parse ini files if a sectionless configuration class",
-            parse, self.TESTFN)
+            parse,
+            self.TESTFN,
+        )
 
     def test_true_type(self):
         for value in ("1", "yes", "true", "on", "YES", "TRUE", "ON"):
-            @register('name')
+
+            @register("name")
             class config:
                 foo = False
 
-            self.write_to_file(textwrap.dedent("""
+            self.write_to_file(
+                textwrap.dedent(
+                    """
                 [name]
                 foo = %s
-            """ % (value)))
+            """
+                    % (value)
+                )
+            )
             self.parse(self.TESTFN)
             assert config.foo is True
             discard()
 
     def test_false_type(self):
         for value in ("0", "no", "false", "off", "NO", "FALSE", "OFF"):
-            @register('name')
+
+            @register("name")
             class config:
                 foo = True
 
-            self.write_to_file(textwrap.dedent("""
+            self.write_to_file(
+                textwrap.dedent(
+                    """
                 [name]
                 foo = %s
-            """ % (value)))
+            """
+                    % (value)
+                )
+            )
             self.parse(self.TESTFN)
             assert config.foo is False
             discard()
 
 
 class TestEnvVars(BaseTestCase):
-
     def test_true_type(self):
         for value in ("1", "yes", "true", "on", "YES", "TRUE", "ON"):
+
             @register()
             class config:
                 foo = False
 
-            os.environ['FOO'] = value
+            os.environ["FOO"] = value
             self.parse_with_envvars()
             assert config.foo is True
             discard()
 
     def test_false_type(self):
         for value in ("0", "no", "false", "off", "NO", "FALSE", "OFF"):
-            @register('name')
+
+            @register("name")
             class config:
                 foo = True
 
-            os.environ['FOO'] = value
+            os.environ["FOO"] = value
             self.parse_with_envvars()
             assert config.foo is False
             discard()
@@ -712,29 +710,28 @@ class TestEnvVars(BaseTestCase):
 
 
 class TestValidators(BaseTestCase):
-
     def test_istrue(self):
-        assert istrue('foo')
-        self.assertRaises(ValidationError, istrue, '')
+        assert istrue("foo")
+        self.assertRaises(ValidationError, istrue, "")
 
     def test_isin(self):
         self.assertRaises(TypeError, isin, 1)
-        fun = isin(('1', '2'))
-        assert fun('1')
-        assert fun('2')
-        self.assertRaises(ValidationError, fun, '3')
+        fun = isin(("1", "2"))
+        assert fun("1")
+        assert fun("2")
+        self.assertRaises(ValidationError, fun, "3")
         self.assertRaises(ValueError, isin, [])
 
     def test_isnotin(self):
         self.assertRaises(TypeError, isin, 1)
-        fun = isnotin(('1', '2'))
-        assert fun('3')
-        assert fun('4')
-        self.assertRaises(ValidationError, fun, '2')
+        fun = isnotin(("1", "2"))
+        assert fun("3")
+        assert fun("4")
+        self.assertRaises(ValidationError, fun, "2")
+        self.assertRaisesRegex(TypeError, "is not iterable", isnotin, None)
         self.assertRaisesRegex(
-            TypeError, "is not iterable", isnotin, None)
-        self.assertRaisesRegex(
-            ValueError, "sequence can't be empty", isnotin, [])
+            ValueError, "sequence can't be empty", isnotin, []
+        )
 
     def test_isemail(self):
         assert isemail("foo@bar.com")
@@ -743,9 +740,10 @@ class TestValidators(BaseTestCase):
         self.assertRaises(ValidationError, isemail, "foo@bar")
         self.assertRaises(ValidationError, isemail, "foo@bar.")
         self.assertRaisesRegex(
-            ValidationError, "expected a string", isemail, None)
+            ValidationError, "expected a string", isemail, None
+        )
         assert isemail("email@domain.com")
-        assert isemail("\"email\"@domain.com")
+        assert isemail('"email"@domain.com')
         assert isemail("firstname.lastname@domain.com")
         assert isemail("email@subdomain.domain.com")
         assert isemail("firstname+lastname@domain.com")
@@ -782,8 +780,7 @@ class TestValidators(BaseTestCase):
         self.assertRaises(ValidationError, fun, "10.0.0.1/24")
         self.assertRaises(ValidationError, fun, "10.0.0")
         self.assertRaises(ValidationError, fun, "256.333.333.333")
-        self.assertRaisesRegex(
-            ValidationError, "expected a string", fun, None)
+        self.assertRaisesRegex(ValidationError, "expected a string", fun, None)
         self.assertRaises(ValidationError, isip4, "::1")
 
     def test_isip6(self, fun=isip6):
@@ -793,18 +790,20 @@ class TestValidators(BaseTestCase):
         # http://www.ronnutter.com/ipv6-cheatsheet-on-identifying-valid-
         #   ipv6-addresses/
         self.assertRaises(
-            ValidationError, fun, "1200::AB00:1234::2552:7777:1313")
+            ValidationError, fun, "1200::AB00:1234::2552:7777:1313"
+        )
         self.assertRaises(
-            ValidationError, fun, "1200:0000:AB00:1234:O000:2552:7777:1313")
-        self.assertRaisesRegex(
-            ValidationError, "expected a string", fun, None)
+            ValidationError, fun, "1200:0000:AB00:1234:O000:2552:7777:1313"
+        )
+        self.assertRaisesRegex(ValidationError, "expected a string", fun, None)
         self.assertRaises(ValidationError, isip6, "127.0.0.1")
 
     def test_isip46(self):
         self.test_isip4(fun=isip46)
         self.test_isip6(fun=isip46)
         self.assertRaisesRegex(
-            ValidationError, "expected a string", isip46, None)
+            ValidationError, "expected a string", isip46, None
+        )
 
 
 # ===================================================================
@@ -813,7 +812,6 @@ class TestValidators(BaseTestCase):
 
 
 class TestParse(BaseTestCase):
-
     def test_no_conf_file(self):
         # parse() is supposed to parse also if no conf file is passed
         @register()
@@ -827,8 +825,8 @@ class TestParse(BaseTestCase):
 
     def test_conf_file_w_unknown_ext(self):
         # Conf file with unsupported extension.
-        with open(TESTFN, 'w') as f:
-            f.write('foo')
+        with open(TESTFN, "w") as f:
+            f.write("foo")
         self.addCleanup(safe_remove, TESTFN)
         with self.assertRaises(ValueError) as cm:
             parse(TESTFN)
@@ -836,7 +834,7 @@ class TestParse(BaseTestCase):
         assert "extension not supported" in str(cm.exception)
 
     def test_parser_with_no_file(self):
-        self.assertRaises(ValueError, parse, file_parser=lambda x: {})
+        self.assertRaises(ValueError, parse, file_parser=lambda x: {})  # noqa
 
     def test_no_registered_class(self):
         self.assertRaises(Error, parse)
@@ -849,16 +847,20 @@ class TestParse(BaseTestCase):
         file = io.StringIO()
         with self.assertRaises(Error) as cm:
             parse(file)
-        assert str(cm.exception) == \
-            "can't determine file format from a file object with no 'name' " \
+        assert (
+            str(cm.exception)
+            == "can't determine file format from a file object with no 'name' "
             "attribute"
+        )
 
-        assert str(cm.exception) == \
-            "can't determine file format from a file object with no 'name' " \
+        assert (
+            str(cm.exception)
+            == "can't determine file format from a file object with no 'name' "
             "attribute"
+        )
 
         file = io.StringIO()
-        parse(file, file_parser=lambda x: {})
+        parse(file, file_parser=lambda x: {})  # noqa
 
     def test_parse_called_twice(self):
         @register()
@@ -877,16 +879,18 @@ class TestParse(BaseTestCase):
 
 
 class TestSchema(BaseTestCase):
-
     def test_errors(self):
         # no default nor required=True
         self.assertRaisesRegex(
-            ValueError, "specify a default value or set required", schema)
+            ValueError, "specify a default value or set required", schema
+        )
         # not callable validator
         self.assertRaisesRegex(
-            TypeError, "not callable", schema, default=10, validator=1)
+            TypeError, "not callable", schema, default=10, validator=1
+        )
         self.assertRaisesRegex(
-            TypeError, "not callable", schema, default=10, validator=['foo'])
+            TypeError, "not callable", schema, default=10, validator=["foo"]
+        )
 
 
 # ===================================================================
@@ -895,55 +899,65 @@ class TestSchema(BaseTestCase):
 
 
 class TestExceptions(BaseTestCase):
-
     def test_error(self):
-        exc = Error('foo')
-        assert str(exc) == 'foo'
-        assert repr(exc) == 'foo'
+        exc = Error("foo")
+        assert str(exc) == "foo"
+        assert repr(exc) == "foo"
 
     def test_already_parsed_error(self):
         exc = AlreadyParsedError()
-        assert 'already parsed' in str(exc)
+        assert "already parsed" in str(exc)
 
     def test_already_registered_error(self):
-        exc = AlreadyRegisteredError('foo')
-        assert 'already registered' in str(exc)
-        assert 'foo' in str(exc)
+        exc = AlreadyRegisteredError("foo")
+        assert "already registered" in str(exc)
+        assert "foo" in str(exc)
 
     def test_not_parsed_error(self):
         exc = NotParsedError()
-        assert 'not parsed' in str(exc)
+        assert "not parsed" in str(exc)
 
     def test_unrecognized_key_error(self):
         exc = UnrecognizedSettingKeyError(
-            section=None, key='foo', new_value='bar')
-        assert str(exc) == \
-            "config file provides setting key 'foo' with value 'bar' but " \
+            section=None, key="foo", new_value="bar"
+        )
+        assert (
+            str(exc)
+            == "config file provides setting key 'foo' with value 'bar' but "
             "setting key 'foo' is not defined in any of the config classes"
+        )
 
         @register()
         class config:
             pass
 
         exc = UnrecognizedSettingKeyError(
-            section=None, key='foo', new_value='bar')
-        assert str(exc) == \
-            "config file provides setting key 'foo' with value 'bar' but " \
-            "setting key 'foo' is not defined in config class %s.%s" % (
-                config.__module__, config.__name__)
+            section=None, key="foo", new_value="bar"
+        )
+        assert (
+            str(exc)
+            == "config file provides setting key 'foo' with value 'bar' but "
+            "setting key 'foo' is not defined in config class %s.%s"
+            % (config.__module__, config.__name__)
+        )
 
     def test_required_key_error(self):
         exc = RequiredSettingKeyError(None, key="foo")
-        assert str(exc) == \
-            "configuration class requires 'foo' setting key to be specified " \
+        assert (
+            str(exc)
+            == "configuration class requires 'foo' setting key to be specified "
             "via config file or environment variable"
+        )
 
     def test_types_mismatch_error(self):
         exc = TypesMismatchError(
-            section=None, key="foo", default_value=1, new_value='bar')
-        assert str(exc) == \
-            "type mismatch for setting key 'foo' (default_value=1, %s) got " \
+            section=None, key="foo", default_value=1, new_value="bar"
+        )
+        assert (
+            str(exc)
+            == "type mismatch for setting key 'foo' (default_value=1, %s) got "
             "'bar' (%s)" % (int, str)
+        )
 
 
 # ===================================================================
@@ -959,22 +973,22 @@ class TestGetParsedConf(BaseTestCase):
 
         self.assertRaises(NotParsedError, get_parsed_conf)
         parse()
-        assert get_parsed_conf() == {'root_value': 1}
+        assert get_parsed_conf() == {"root_value": 1}
 
     def test_root_plus_sub(self):
         @register()
         class root_conf:
             root_value = 1
 
-        @register('sub')
+        @register("sub")
         class sub_conf:
             sub_value = 1
 
         parse()
-        assert get_parsed_conf() == {'root_value': 1, 'sub': {'sub_value': 1}}
+        assert get_parsed_conf() == {"root_value": 1, "sub": {"sub_value": 1}}
 
     def test_sub_plus_root(self):
-        @register('sub')
+        @register("sub")
         class sub_conf:
             sub_value = 1
 
@@ -983,7 +997,7 @@ class TestGetParsedConf(BaseTestCase):
             root_value = 1
 
         parse()
-        assert get_parsed_conf() == {'root_value': 1, 'sub': {'sub_value': 1}}
+        assert get_parsed_conf() == {"root_value": 1, "sub": {"sub_value": 1}}
 
     def test_hidden_key(self):
         @register()
@@ -992,7 +1006,7 @@ class TestGetParsedConf(BaseTestCase):
             _hidden = 2
 
         parse()
-        assert get_parsed_conf() == {'foo': 1}
+        assert get_parsed_conf() == {"foo": 1}
 
 
 # ===================================================================
@@ -1001,7 +1015,6 @@ class TestGetParsedConf(BaseTestCase):
 
 
 class TestRegister(BaseTestCase):
-
     def test_dictify_and_method(self):
         @register()
         class config:
@@ -1013,16 +1026,17 @@ class TestRegister(BaseTestCase):
             def some_method(cls):
                 return 1
 
-        assert dict(config) == {'foo': 1, 'bar': 2}
+        assert dict(config) == {"foo": 1, "bar": 2}
         assert config.some_method() == 1
         parse()
-        assert dict(config) == {'foo': 1, 'bar': 2}
+        assert dict(config) == {"foo": 1, "bar": 2}
         assert config.some_method() == 1
 
     def test_special_methods(self):
         @register()
         class config:
             """docstring"""
+
             foo = 1
             bar = 2
 
@@ -1035,17 +1049,17 @@ class TestRegister(BaseTestCase):
         # __len__
         assert len(config) == 2
         # __getitem__
-        assert config['foo'] == 1
+        assert config["foo"] == 1
         # __setitem__
-        config['foo'] == 33
-        assert config['foo'] == 1
+        config["foo"] == 33  # noqa
+        assert config["foo"] == 1
         # __contains__
-        assert 'foo' in config
+        assert "foo" in config
         # should we allow this?
-        assert 'some_method' in config
+        assert "some_method" in config
         # __delitem__
-        del config['foo']
-        assert 'foo' not in config
+        del config["foo"]
+        assert "foo" not in config
         assert len(config) == 1
         # __repr__
         repr(config)
@@ -1056,18 +1070,22 @@ class TestRegister(BaseTestCase):
             foo = 1
 
         with self.assertRaises(AlreadyRegisteredError):
+
             @register()
             class config_2:
                 foo = 1
 
     def test_decorate_fun(self):
         with self.assertRaises(TypeError) as cm:
+
             @register()
             def foo():
                 pass
 
-        assert 'register decorator is supposed to be used against a class' in \
-            str(cm.exception)
+        assert (
+            "register decorator is supposed to be used against a class"
+            in str(cm.exception)
+        )
 
     def test_override_root_section_key(self):
         @register()
@@ -1075,13 +1093,15 @@ class TestRegister(BaseTestCase):
             foo = 1
 
         with self.assertRaises(Error) as cm:
+
             @register(section="foo")
             class sub:
                 bar = 2
 
         assert "previously registered root class" in str(cm.exception)
-        assert "already defines a section with the same name" \
-            in str(cm.exception)
+        assert "already defines a section with the same name" in str(
+            cm.exception
+        )
 
     def test_register_after_parse(self):
         @register()
@@ -1091,28 +1111,30 @@ class TestRegister(BaseTestCase):
         parse()
 
         with warnings.catch_warnings(record=True) as ws:
+
             @register(section="unparsed")
             class unparsed_config:
                 bar = 1
 
         assert len(ws) == 1
-        assert 'configuration class defined after parse' in \
-            str(ws[0].message)
+        assert "configuration class defined after parse" in str(ws[0].message)
         assert ws[0].category is UserWarning
         # global conf will not include this
-        assert get_parsed_conf() == {'foo': 1}
+        assert get_parsed_conf() == {"foo": 1}
         # but it's still a magic object
-        assert dict(unparsed_config) == {'bar': 1}
+        assert dict(unparsed_config) == {"bar": 1}
 
     def test_invalid_section_type(self):
         # this also serves as a test for
         with self.assertRaises(TypeError):
+
             @register(section=1)
             class config:
                 foo = 1
 
     def test_invalid_section_str(self):
         with self.assertRaises(ValueError):
+
             @register(section="")
             class config:
                 foo = 1
@@ -1124,7 +1146,6 @@ class TestRegister(BaseTestCase):
 
 
 class TestMisc(BaseTestCase):
-
     def test_mro(self):
         # This method is automatically added by the meta class wrapper:
         # https://docs.python.org/3/library/stdtypes.html#class.mro
@@ -1141,14 +1162,14 @@ class TestMisc(BaseTestCase):
         class config:
             pass
 
-        config.mro
+        config.mro  # noqa
 
     def test__all__(self):
         dir_confix = dir(confix)
         for name in dir_confix:
-            if name in ('configparser', 'logger', 'basestring', 'unicode'):
+            if name in ("configparser", "logger", "basestring", "unicode"):
                 continue
-            if not name.startswith('_'):
+            if not name.startswith("_"):
                 try:
                     __import__(name)
                 except ImportError:
@@ -1156,9 +1177,11 @@ class TestMisc(BaseTestCase):
                         fun = getattr(confix, name)
                         if fun is None:
                             continue
-                        if (fun.__doc__ is not None and
-                                'deprecated' not in fun.__doc__.lower()):
-                            self.fail('%r not in confix.__all__' % name)
+                        if (
+                            fun.__doc__ is not None
+                            and "deprecated" not in fun.__doc__.lower()
+                        ):
+                            self.fail("%r not in confix.__all__" % name)
 
         # Import 'star' will break if __all__ is inconsistent, see:
         # https://github.com/giampaolo/psutil/issues/656
@@ -1168,21 +1191,23 @@ class TestMisc(BaseTestCase):
             assert name in dir_confix
 
     def test_version(self):
-        assert '.'.join([str(x) for x in confix.version_info]) == \
-            confix.__version__
+        assert (
+            ".".join([str(x) for x in confix.version_info])
+            == confix.__version__
+        )
 
     def test_setup_script(self):
         here = os.path.abspath(os.path.dirname(__file__))
-        setup_py = os.path.realpath(os.path.join(here, 'setup.py'))
-        module = imp.load_source('setup', setup_py)
+        setup_py = os.path.realpath(os.path.join(here, "setup.py"))
+        module = imp.load_source("setup", setup_py)
         self.assertRaises(SystemExit, module.setup)
         assert module.get_version() == confix.__version__
 
 
 def main():
-    verbosity = 1 if 'TOX' in os.environ else 2
+    verbosity = 1 if "TOX" in os.environ else 2
     unittest.main(verbosity=verbosity)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
