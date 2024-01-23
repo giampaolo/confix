@@ -94,17 +94,17 @@ class BaseTestCase(unittest.TestCase):
         parse_with_envvars(*args, **kwargs)
 
 
-class BaseMixin(object):
+class BaseMixin:
     """Base class from which mixin classes are derived."""
     TESTFN = None
     section = None
 
     def setUp(self):
-        super(BaseMixin, self).setUp()
+        super().setUp()
         self.original_section = self.section
 
     def tearDown(self):
-        super(BaseMixin, self).tearDown()
+        super().tearDown()
         self.section = self.original_section
 
     def dict_to_file(self, dct):
@@ -624,7 +624,7 @@ class TestEnvVarsMixin(BaseMixin, BaseTestCase):
     TESTFN = TESTFN + 'testfile.ini'
 
     def setUp(self):
-        super(TestEnvVarsMixin, self).setUp()
+        super().setUp()
         if self._testMethodName.startswith('test_multisection'):
             raise unittest.SkipTest
 
@@ -955,7 +955,7 @@ class TestExceptions(BaseTestCase):
             section=None, key="foo", default_value=1, new_value='bar')
         assert str(exc) == \
             "type mismatch for setting key 'foo' (default_value=1, %s) got " \
-            "'bar' (%s)" % (type(1), type(""))
+            "'bar' (%s)" % (int, str)
 
 
 # ===================================================================
