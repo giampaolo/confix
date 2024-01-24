@@ -1,12 +1,13 @@
 Bug tracker at https://github.com/giampaolo/confix/issues
 
-Version 0.2.2 - XXXX-XX-XX
+Version 0.2.2 - 2024-01-24
 ==========================
 
 - #18: isurl() validator.
 - #19: isip4(), isip6() and isip46() validators.
 - schema() has a new 'type_check' parameter.
 - remove Python 2.X support
+- use Ruff linter
 
 Version 0.2.1 - 2015-07-28
 ==========================

@@ -247,7 +247,11 @@ def _lock_ctx():
 
 
 def _isiter(obj):
-    return isinstance(obj, collections.abc.Iterable)
+    try:
+        iter(obj)
+        return True
+    except TypeError:
+        return False
 
 
 # =============================================================================

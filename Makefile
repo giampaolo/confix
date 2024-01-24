@@ -4,45 +4,52 @@
 
 PYTHON=python3
 TSCRIPT=tests.py
-
 INSTALL_OPTS = `$(PYTHON) -c \
 	"import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
 
-all: test
+# if make is invoked with no arg, default to `make help`
+.DEFAULT_GOAL := help
 
-clean:
-	rm -f `find . -type f -name \*.py[co]`
-	rm -f `find . -type f -name \*.so`
-	rm -f `find . -type f -name .\*~`
-	rm -f `find . -type f -name \*.orig`
-	rm -f `find . -type f -name \*.bak`
-	rm -f `find . -type f -name \*.rej`
-	rm -rf `find . -type d -name __pycache__`
-	rm -rf *.core
-	rm -rf *.egg-info
-	rm -rf *\$testfile*
-	rm -rf .coverage
-	rm -rf .tox
-	rm -rf build
-	rm -rf dist
-	rm -rf docs/_build
-	rm -rf htmlcov
+# ===================================================================
+# Install
+# ===================================================================
 
-# useful deps which are nice to have while developing / testing
-setup-dev-env: install-git-hooks
+clean:  ## Remove all build files.
+	@rm -rfv `find . \
+		-type d -name __pycache__ \
+		-o -type f -name \*.bak \
+		-o -type f -name \*.orig \
+		-o -type f -name \*.pyc \
+		-o -type f -name \*.pyd \
+		-o -type f -name \*.pyo \
+		-o -type f -name \*.rej \
+		-o -type f -name \*.so \
+		-o -type f -name \*.~ \
+		-o -type f -name \*\$testfn`
+	@rm -rfv \
+		*.core \
+		*.egg-info \
+		*\@psutil-* \
+		.coverage \
+		.failed-tests.txt \
+		.pytest_cache \
+		.ruff_cache/ \
+		build/ \
+		dist/ \
+		docs/_build/ \
+		htmlcov/ \
+		wheelhouse
+
+setup-dev-env:  # useful deps which are nice to have while developing / testing
+	${MAKE} install-git-hooks
 	$(PYTHON) -m pip install --user --upgrade pip
 	$(PYTHON) -m pip install --user --upgrade \
 		coverage \
-		flake8 \
-		ipaddress \
-		pep8 \
 		pytest \
-		pytest-cov \
 		pyyaml \
 		sphinx \
 		sphinx-pypi-upload \
-		toml \
-		unittest2
+		toml
 
 install:
 	# make sure setuptools is installed (needed for 'develop' / edit mode)
@@ -50,9 +57,12 @@ install:
 	PYTHONWARNINGS=all $(PYTHON) setup.py develop $(INSTALL_OPTS)
 	$(PYTHON) -c "import confix"  # make sure it actually worked
 
-
 uninstall:
 	cd ..; $(PYTHON) -m pip uninstall -y -v confix
+
+# ===================================================================
+# Tests
+# ===================================================================
 
 test:
 	$(PYTHON) -m pytest -s -v $(TSCRIPT)
@@ -71,6 +81,10 @@ coverage: install
 	$(PYTHON) -m coverage html
 	$(PYTHON) -m webbrowser -t htmlcov/confix.html
 
+# ===================================================================
+# Linters
+# ===================================================================
+
 ruff:  ## Run ruff linter.
 	@git ls-files '*.py' | xargs $(PYTHON) -m ruff check --no-cache
 	@git ls-files '*.py' | xargs $(PYTHON) -m ruff format --check
@@ -79,11 +93,18 @@ fix-ruff:
 	@git ls-files '*.py' | xargs $(PYTHON) -m ruff --no-cache --fix
 	@git ls-files '*.py' | xargs $(PYTHON) -m ruff format --no-cache
 
-# upload source tarball on https://pypi.python.org/pypi/pysendfile.
-upload-src:
+# ===================================================================
+# Distribution
+# ===================================================================
+
+sdist:  ## Create tar.gz source distribution.
 	$(MAKE) clean
 	PYTHONWARNINGS=all $(PYTHON) setup.py sdist
+
+release:  # Upload source tarball on https://pypi.python.org/pypi/pysendfile.
+	$(MAKE) sdist
 	$(PYTHON) -m twine upload dist/*.tar.gz
+	$(MAKE) git-tag-release
 
 # Build and upload doc on https://pythonhosted.org/confix/.
 # Requires "pip install sphinx-pypi-upload".
@@ -95,6 +116,10 @@ upload-doc:
 git-tag-release:
 	git tag -a release-`python -c "import setup; print(setup.get_version())"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`
 	git push --follow-tags
+
+# ===================================================================
+# Misc
+# ===================================================================
 
 # install GIT pre-commit hook
 install-git-hooks:
